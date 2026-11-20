@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Task tracking</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif}
+a{color:#0E5A47}a:hover{color:#0A4335}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F4F6F2; color: #13211C; display: flex; flex-direction: column; overflow: hidden; position: relative">
+  <div style="position: relative; height: 330px; flex-shrink: 0; background: #DCE6DD">
+    <svg aria-hidden="true" width="390" height="330" viewBox="0 0 390 330" fill="none">
+      <path d="M-10 90h410M-10 210h410M90-10v350M250-10v350" stroke="#FFFFFF" stroke-width="14"/>
+      <path d="M-10 280l180-130 230-90" stroke="#FFFFFF" stroke-width="8"/>
+      <rect x="110" y="110" width="120" height="80" rx="8" fill="#CFDCD1"/>
+      <rect x="270" y="230" width="90" height="70" rx="8" fill="#CFDCD1"/>
+      <path d="M90 250V210h160V120" stroke="#0E5A47" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 10"/>
+      <circle cx="90" cy="250" r="13" fill="#F4B321" stroke="#13211C" stroke-width="3"/>
+      <circle cx="250" cy="120" r="13" fill="#0E5A47" stroke="#FFFFFF" stroke-width="3"/>
+    </svg>
+    <a href="Offers.dc.html" aria-label="Back to offers" style="position: absolute; top: 52px; left: 16px; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: #FFFFFF; color: #13211C">
+      <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+    </a>
+    <span style="position: absolute; top: 58px; right: 16px; padding: 8px 14px; border-radius: 999px; background: #13211C; color: #FFFFFF; font-size: 14px; font-weight: 600">Arriving in 6 min</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px; flex-grow: 1; margin-top: -24px; padding: 20px 20px 24px; border-radius: 24px 24px 0 0; background: #F4F6F2; position: relative">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <span aria-hidden="true" style="display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: 50%; background: #E3F0EA; color: #0E5A47; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 700">AS</span>
+      <div style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1; min-width: 0">
+        <span style="font-size: 17px; font-weight: 600">Aman S. is on the way</span>
+        <span style="font-size: 13px; color: #55635D">Verified helper · 4.9 rating</span>
+      </div>
+      <button type="button" aria-label="Call Aman" style="display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border: 1px solid #C9D3CB; border-radius: 50%; background: #FFFFFF; color: #0E5A47; cursor: pointer">
+        <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.500 1.500a11 11 0 0 0 5 5L15 13l5 2v4a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1z"/></svg>
+      </button>
+      <button type="button" aria-label="Chat with Aman" style="display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border: 1px solid #C9D3CB; border-radius: 50%; background: #FFFFFF; color: #0E5A47; cursor: pointer">
+        <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>
+      </button>
+    </div>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-radius: 16px; background: #0E5A47; color: #FFFFFF">
+      <div style="display: flex; flex-direction: column; gap: 3px">
+        <span style="font-size: 15px; font-weight: 600">Start code</span>
+        <span style="font-size: 13px; line-height: 18px; color: #D9EBE4">Tell Aman this code when he arrives</span>
+      </div>
+      <span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 700; letter-spacing: 6px; color: #F4B321">4821</span>
+    </div>
+
+    <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px">
+      <li style="display: flex; align-items: center; gap: 12px">
+        <span style="display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #0E5A47"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.500l4.500 4.500L19 7.500"/></svg></span>
+        <span style="flex-grow: 1; font-size: 15px">Task posted</span>
+        <span style="font-size: 13px; color: #55635D">11:42</span>
+      </li>
+      <li style="display: flex; align-items: center; gap: 12px">
+        <span style="display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #0E5A47"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.500l4.500 4.500L19 7.500"/></svg></span>
+        <span style="flex-grow: 1; font-size: 15px">Aman confirmed at ₹150</span>
+        <span style="font-size: 13px; color: #55635D">11:46</span>
+      </li>
+      <li style="display: flex; align-items: center; gap: 12px">
+        <span aria-hidden="true" style="box-sizing: border-box; width: 24px; height: 24px; border-radius: 50%; background: #F4B321; border: 5px solid #FFF3D1"></span>
+        <span style="flex-grow: 1; font-size: 15px; font-weight: 600">On the way to pickup</span>
+        <span style="font-size: 13px; color: #55635D">Now</span>
+      </li>
+      <li style="display: flex; align-items: center; gap: 12px">
+        <span aria-hidden="true" style="box-sizing: border-box; width: 24px; height: 24px; border-radius: 50%; border: 2px solid #A9B8B1"></span>
+        <span style="flex-grow: 1; font-size: 15px; color: #55635D">Task started with code</span>
+      </li>
+      <li style="display: flex; align-items: center; gap: 12px">
+        <span aria-hidden="true" style="box-sizing: border-box; width: 24px; height: 24px; border-radius: 50%; border: 2px solid #A9B8B1"></span>
+        <span style="flex-grow: 1; font-size: 15px; color: #55635D">Done, then you pay ₹150 by UPI</span>
+      </li>
+    </ol>
+
+    <div style="display: flex; gap: 10px; margin-top: auto">
+      <button type="button" style="flex: 1 1 0; min-height: 52px; border: 1.5px solid #9A3412; border-radius: 14px; background: #FFFFFF; color: #9A3412; font: 600 15px Inter, system-ui, sans-serif; cursor: pointer">Report an issue</button>
+      <a href="Main.dc.html" style="flex: 1 1 0; display: flex; align-items: center; justify-content: center; min-height: 52px; border-radius: 14px; background: #13211C; color: #FFFFFF; font-size: 15px; font-weight: 600; text-decoration: none">Back to home</a>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

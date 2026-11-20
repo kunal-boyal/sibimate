@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Confirm your task</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif}
+a{color:#0E5A47}a:hover{color:#0A4335}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 52px 20px 24px; background: #F4F6F2; color: #13211C; display: flex; flex-direction: column; gap: 14px; overflow: hidden">
+  <div style="display: flex; align-items: center; gap: 8px">
+    <a href="Main.dc.html" aria-label="Back to home" style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-left: -12px; color: #13211C">
+      <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+    </a>
+    <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 700">Confirm your task</h1>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 20px; background: #0E5A47; color: #FFFFFF">
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.4px; color: #D9EBE4">HERE IS WHAT WE UNDERSTOOD</span>
+      <span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">Carry two suitcases</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+      <div style="display: flex; flex-direction: column; gap: 2px; padding: 10px; border-radius: 12px; background: #1A6B57">
+        <span style="font-size: 12px; color: #D9EBE4">Category</span>
+        <span style="font-size: 14px; font-weight: 600">Physical help</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px; padding: 10px; border-radius: 12px; background: #1A6B57">
+        <span style="font-size: 12px; color: #D9EBE4">Helpers</span>
+        <span style="font-size: 14px; font-weight: 600">1 person</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px; padding: 10px; border-radius: 12px; background: #1A6B57">
+        <span style="font-size: 12px; color: #D9EBE4">Duration</span>
+        <span style="font-size: 14px; font-weight: 600">30–45 min</span>
+      </div>
+    </div>
+    <button type="button" style="align-self: flex-start; min-height: 44px; padding: 0; border: 0; background: none; color: #F4B321; font: 600 14px Inter, system-ui, sans-serif; cursor: pointer">Something wrong? Edit details</button>
+  </div>
+
+  <div style="display: flex; flex-direction: column; padding: 4px 16px; border-radius: 16px; background: #FFFFFF; border: 1px solid #DFE5DF">
+    <div style="display: flex; align-items: center; gap: 12px; min-height: 52px; border-bottom: 1px solid #DFE5DF">
+      <span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 50%; background: #0E5A47"></span>
+      <span style="display: flex; flex-direction: column; gap: 1px">
+        <span style="font-size: 12px; color: #55635D">From</span>
+        <span style="font-size: 15px; font-weight: 600">Mansarovar metro station</span>
+      </span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; min-height: 52px">
+      <span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 2px; background: #F4B321"></span>
+      <span style="display: flex; flex-direction: column; gap: 1px">
+        <span style="font-size: 12px; color: #55635D">To</span>
+        <span style="font-size: 15px; font-weight: 600">Home, Sector 7, Mansarovar</span>
+      </span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <span style="font-size: 13px; font-weight: 600; color: #55635D">When</span>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+      <button type="button" aria-pressed="true" style="min-height: 48px; border: 2px solid #0E5A47; border-radius: 14px; background: #E3F0EA; color: #0E5A47; font: 600 15px Inter, system-ui, sans-serif; cursor: pointer">Right now</button>
+      <button type="button" aria-pressed="false" style="min-height: 48px; border: 1px solid #C9D3CB; border-radius: 14px; background: #FFFFFF; color: #13211C; font: 500 15px Inter, system-ui, sans-serif; cursor: pointer">Schedule</button>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <label for="budget" style="font-size: 13px; font-weight: 600; color: #55635D">Your budget</label>
+    <div style="display: flex; align-items: center; gap: 12px; padding: 6px 6px 6px 16px; border-radius: 16px; background: #FFFFFF; border: 1px solid #DFE5DF">
+      <span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 24px; font-weight: 700">₹</span>
+      <input id="budget" type="text" inputmode="numeric" value="150" style="flex-grow: 1; min-width: 0; height: 44px; padding: 0; border: 0; background: none; color: #13211C; font: 700 24px 'Space Grotesk', Inter, sans-serif">
+      <span style="padding: 8px 12px; border-radius: 12px; background: #FFF3D1; color: #4A4222; font-size: 13px; font-weight: 600">Usually ₹99–199</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <span style="font-size: 13px; font-weight: 600; color: #55635D">Pay with</span>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+      <button type="button" aria-pressed="true" style="min-height: 48px; border: 2px solid #0E5A47; border-radius: 14px; background: #E3F0EA; color: #0E5A47; font: 600 15px Inter, system-ui, sans-serif; cursor: pointer">UPI in app</button>
+      <button type="button" aria-pressed="false" style="min-height: 48px; border: 1px solid #C9D3CB; border-radius: 14px; background: #FFFFFF; color: #13211C; font: 500 15px Inter, system-ui, sans-serif; cursor: pointer">Cash to helper</button>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px; margin-top: auto">
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 18px; color: #55635D">
+      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0E5A47" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>
+      <span>Your exact address is shared only after you confirm a helper.</span>
+    </div>
+    <a href="Offers.dc.html" style="display: flex; align-items: center; justify-content: center; min-height: 56px; border-radius: 16px; background: #0E5A47; color: #FFFFFF; font-size: 17px; font-weight: 600; text-decoration: none">Post task to nearby helpers</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

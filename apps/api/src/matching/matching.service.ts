@@ -1,0 +1,105 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectDrizzle } from '@nestjs/drizzle';
+import { HELPER_SEEN_SECONDS, MATCHING_NOTIFY_LIMIT, MATCHING_RINGS } from '@sibimate/shared';
+import { and, eq, inArray, sql } from 'drizzle-orm';
+import type { Database } from '../db/db.js';
+import { taskOffers, tasks } from '../db/schema.js';
+import { Notifier } from '../live/notifier.js';
+import { TaskStateService } from '../tasks/task-state.service.js';
+import { MatchingScheduler } from './matching-scheduler.js';
+
+/** A task with offers waiting for the customer is given this long before it expires anyway. */
+const QUOTES_GRACE_MS = 60 * 60 * 1000;
+
+export type RingOutcome = 'stopped' | 'expired' | 'waiting-for-customer' | { notified: number };
+
+/**
+ * Searches for helpers in widening rings. Each ring notifies the best nearby
+ * helpers who have not seen the task yet, then schedules the next ring. It
+ * stops as soon as the task is no longer looking for a helper.
+ */
+@Injectable()
+export class MatchingService {
+  private readonly logger = new Logger('Matching');
+
+  constructor(
+    @InjectDrizzle() private readonly db: Database,
+    private readonly taskState: TaskStateService,
+    private readonly scheduler: MatchingScheduler,
+    private readonly notifier: Notifier,
+  ) {}
+
+  async runRing(taskId: string, ring: number): Promise<RingOutcome> {
+    const [task] = await this.db.select().from(tasks).where(eq(tasks.id, taskId));
+    if (!task || task.status !== 'matching') {
+      return 'stopped';
+    }
+
+    const step = MATCHING_RINGS[ring];
+    if (!step) {
+      return this.finish(taskId, ring, task.createdAt);
+    }
+
+    // One statement finds, ranks and records the helpers, so two workers on the same ring cannot notify twice.
+    const { rows } = await this.db.execute(sql`
+      insert into task_offers (task_id, helper_id, ring, distance_m)
+      select t.id, hp.id, ${ring}, round(ST_Distance(ha.last_location, t.pickup_point))::int
+      from tasks t
+      join helper_profiles hp on hp.status = 'active' and hp.user_id <> t.customer_id
+      join helper_availability ha on ha.helper_id = hp.id
+      left join task_categories c on c.id = t.category_id
+      where t.id = ${taskId}
+        and ha.is_online
+        and ha.last_location is not null
+        and ha.seen_at > now() - make_interval(secs => ${HELPER_SEEN_SECONDS})
+        -- The verification levels are an enum in rising order.
+        and hp.verification_level >= coalesce(c.min_verification_level, 'basic')
+        and not exists (select 1 from bookings b where b.helper_id = hp.id and b.status = 'active')
+        and not exists (select 1 from task_offers o where o.task_id = t.id and o.helper_id = hp.id)
+        -- Inside this ring, and inside the distance the helper is willing to travel.
+        and ST_DWithin(ha.last_location, t.pickup_point, least(${step.radiusM}, ha.radius_m))
+      order by
+        ST_Distance(ha.last_location, t.pickup_point) / 1000.0
+        + 2.0 * hp.cancelled_count / (hp.completed_count + hp.cancelled_count + 1)
+      limit ${MATCHING_NOTIFY_LIMIT}
+      on conflict do nothing
+      returning helper_id
+    `);
+    await this.db.update(tasks).set({ searchRadiusM: step.radiusM }).where(eq(tasks.id, taskId));
+    await this.scheduler.schedule(taskId, ring + 1, step.waitSeconds * 1000);
+    if (rows.length > 0) {
+      // The helpers just found see the task appear.
+      await this.notifier.taskChanged(taskId);
+    }
+
+    this.logger.log(`Task ${taskId}: ring ${ring} (${step.radiusM} m) notified ${rows.length} helper(s)`);
+    return { notified: rows.length };
+  }
+
+  /** After the last ring: expire the task, unless helpers have made offers the customer has not chosen from. */
+  private async finish(taskId: string, ring: number, createdAt: Date): Promise<RingOutcome> {
+    const quotes = await this.db
+      .select({ id: taskOffers.id })
+      .from(taskOffers)
+      .where(and(eq(taskOffers.taskId, taskId), eq(taskOffers.status, 'quoted')))
+      .limit(1);
+    if (quotes.length > 0 && Date.now() - createdAt.getTime() < QUOTES_GRACE_MS) {
+      await this.scheduler.schedule(taskId, ring, MATCHING_RINGS.at(-1)!.waitSeconds * 1000);
+      return 'waiting-for-customer';
+    }
+    await this.taskState.transition(
+      taskId,
+      'expired',
+      { role: 'system' },
+      {
+        within: (tx) =>
+          tx
+            .update(taskOffers)
+            .set({ status: 'expired' })
+            .where(and(eq(taskOffers.taskId, taskId), inArray(taskOffers.status, ['notified', 'quoted']))),
+      },
+    );
+    this.logger.log(`Task ${taskId}: no helper found, expired`);
+    return 'expired';
+  }
+}

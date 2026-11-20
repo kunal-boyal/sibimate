@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sibimate admin helper verification</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif}
+a{color:#0E5A47}a:hover{color:#0A4335}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 100vh; background: #F4F6F2; color: #13211C">
+  <aside style="flex: 1 1 232px; box-sizing: border-box; padding: 24px 16px; background: #13211C; color: #F4F6F2; display: flex; flex-direction: column; gap: 28px">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 0 8px">
+      <svg role="img" aria-label="Sibimate" width="36" height="26" viewBox="0 0 44 32"><circle cx="16" cy="16" r="14" fill="#F4B321"/><circle cx="28" cy="16" r="14" fill="none" stroke="#FFFFFF" stroke-width="4"/></svg>
+      <span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 21px; font-weight: 700; letter-spacing: -0.5px">sibimate</span>
+    </div>
+    <nav aria-label="Admin" style="display: flex; flex-direction: column; gap: 4px">
+      <sc-for list="{{nav}}" as="n" hint-placeholder-count="7">
+        <a href="{{n.href}}" style="display: flex; align-items: center; justify-content: space-between; min-height: 44px; padding: 0 12px; border-radius: 10px; background: {{n.bg}}; color: {{n.fg}}; font-size: 15px; font-weight: 600; text-decoration: none">
+          <span>{{n.label}}</span>
+          <span style="font-size: 13px">{{n.count}}</span>
+        </a>
+      </sc-for>
+    </nav>
+    <span style="margin-top: auto; padding: 0 12px; font-size: 13px; color: #B4C2BB">admin.sibimate.com</span>
+  </aside>
+
+  <main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 32px; display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 700; letter-spacing: -0.5px">Helper verification</h1>
+        <span style="font-size: 14px; color: #55635D">5 waiting · 62 active helpers of the 75 pilot target · sample data</span>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px">
+        <button type="button" aria-pressed="true" style="min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; background: #13211C; color: #FFFFFF; font: 600 14px Inter, system-ui, sans-serif; cursor: pointer">Waiting · 5</button>
+        <button type="button" aria-pressed="false" style="min-height: 44px; padding: 0 16px; border: 1px solid #C9D3CB; border-radius: 999px; background: #FFFFFF; color: #13211C; font: 500 14px Inter, system-ui, sans-serif; cursor: pointer">Active · 62</button>
+        <button type="button" aria-pressed="false" style="min-height: 44px; padding: 0 16px; border: 1px solid #C9D3CB; border-radius: 999px; background: #FFFFFF; color: #13211C; font: 500 14px Inter, system-ui, sans-serif; cursor: pointer">Paused</button>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px">
+      <section aria-label="Waiting applicants" style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+        <sc-for list="{{queue}}" as="w" hint-placeholder-count="5">
+          <button type="button" onClick="{{w.pick}}" aria-pressed="{{w.on}}" style="display: flex; align-items: center; gap: 12px; width: 100%; min-height: 76px; padding: 12px 16px; border: 2px solid {{w.border}}; border-radius: 14px; background: #FFFFFF; color: #13211C; text-align: left; font-family: Inter, system-ui, sans-serif; cursor: pointer">
+            <span aria-hidden="true" style="display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%; background: #E3F0EA; color: #0E5A47; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 700">{{w.initials}}</span>
+            <span style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1; min-width: 0">
+              <span style="font-size: 15px; font-weight: 600">{{w.name}}</span>
+              <span style="font-size: 13px; color: #55635D">{{w.source}} · applied {{w.applied}}</span>
+            </span>
+            <span style="font-size: 13px; font-weight: 600; color: #4A4222; white-space: nowrap">{{w.left}}</span>
+          </button>
+        </sc-for>
+      </section>
+
+      <section aria-live="polite" style="flex: 2 1 480px; min-width: 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px; padding: 24px; border-radius: 16px; background: #FFFFFF; border: 1px solid #DFE5DF">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px">
+          <div style="display: flex; flex-direction: column; gap: 4px">
+            <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 24px; font-weight: 700">{{sel.name}}</h2>
+            <span style="font-size: 14px; color: #55635D">{{sel.source}} · wants work within {{sel.radius}} · {{sel.hours}}</span>
+          </div>
+          <span style="padding: 6px 12px; border-radius: 999px; background: #FFF3D1; color: #4A4222; font-size: 13px; font-weight: 600">{{sel.left}}</span>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 20px">
+          <div style="flex: 1 1 220px; display: flex; flex-direction: column; gap: 8px">
+            <div style="display: flex; align-items: center; justify-content: center; height: 150px; border: 1.5px dashed #A9B8B1; border-radius: 12px; background: #F4F6F2; font-size: 13px; color: #55635D; text-align: center; padding: 12px; box-sizing: border-box">ID document preview, masked and visible to verifiers only</div>
+            <div style="display: flex; align-items: center; justify-content: center; height: 110px; border: 1.5px dashed #A9B8B1; border-radius: 12px; background: #F4F6F2; font-size: 13px; color: #55635D; text-align: center; padding: 12px; box-sizing: border-box">Profile photo</div>
+          </div>
+
+          <ul style="flex: 2 1 280px; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column">
+            <sc-for list="{{sel.checks}}" as="c" hint-placeholder-count="7">
+              <li style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; border-bottom: 1px solid #DFE5DF">
+                <span style="font-size: 15px">{{c.label}}</span>
+                <span style="padding: 4px 10px; border-radius: 999px; background: {{c.bg}}; color: {{c.fg}}; font-size: 13px; font-weight: 600; white-space: nowrap">{{c.state}}</span>
+              </li>
+            </sc-for>
+          </ul>
+        </div>
+
+        <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 10px">
+          <legend style="padding: 0; margin-bottom: 10px; font-size: 15px; font-weight: 600">Verification level to grant</legend>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 10px">
+            <label style="display: flex; align-items: flex-start; gap: 10px; padding: 14px; border: 1px solid #C9D3CB; border-radius: 12px; cursor: pointer">
+              <input type="radio" name="level" style="width: 20px; height: 20px; margin: 0; accent-color: #0E5A47">
+              <span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px; font-weight: 600">Basic</span><span style="font-size: 13px; line-height: 18px; color: #55635D">Low-risk tasks in public places: errands, parcel drops, carrying luggage</span></span>
+            </label>
+            <label style="display: flex; align-items: flex-start; gap: 10px; padding: 14px; border: 2px solid #0E5A47; border-radius: 12px; background: #E3F0EA; cursor: pointer">
+              <input type="radio" name="level" checked style="width: 20px; height: 20px; margin: 0; accent-color: #0E5A47">
+              <span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px; font-weight: 600">Verified</span><span style="font-size: 13px; line-height: 18px; color: #33443D">Household and customer-facing tasks, including entering homes</span></span>
+            </label>
+          </div>
+        </fieldset>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px">
+          <button type="button" style="flex: 2 1 200px; min-height: 52px; border: 0; border-radius: 12px; background: #0E5A47; color: #FFFFFF; font: 600 16px Inter, system-ui, sans-serif; cursor: pointer">Approve helper</button>
+          <button type="button" style="flex: 1 1 160px; min-height: 52px; border: 1px solid #C9D3CB; border-radius: 12px; background: #FFFFFF; color: #13211C; font: 600 15px Inter, system-ui, sans-serif; cursor: pointer">Ask for more details</button>
+          <button type="button" style="flex: 1 1 120px; min-height: 52px; border: 1.5px solid #9A3412; border-radius: 12px; background: #FFFFFF; color: #9A3412; font: 600 15px Inter, system-ui, sans-serif; cursor: pointer">Reject</button>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1060}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { picked: 0 };
+  }
+  renderVals() {
+    var self = this;
+    var nav = [
+      ['Overview', 'AdminOverview.dc.html', '', false],
+      ['Bookings', 'AdminBookings.dc.html', '3', false],
+      ['Helpers', 'AdminWorkers.dc.html', '5', true],
+      ['Customers', 'AdminOverview.dc.html', '', false],
+      ['Disputes', 'AdminBookings.dc.html', '1', false],
+      ['Payouts', 'AdminOverview.dc.html', '2', false],
+      ['Categories and pricing', 'AdminOverview.dc.html', '', false]
+    ].map(function (n) {
+      return { label: n[0], href: n[1], count: n[2], bg: n[3] ? '#F4B321' : 'transparent', fg: n[3] ? '#13211C' : '#F4F6F2' };
+    });
+    var labels = ['Mobile number, OTP', 'Identity document', 'Photo matches document', 'Age 18 or older', 'Payout UPI or bank account', 'Emergency contact', 'Safety and conduct orientation'];
+    var ok = ['Passed', '#E3F0EA', '#0E5A47'];
+    var review = ['Needs review', '#FFF3D1', '#4A4222'];
+    var missing = ['Not done', '#FDE8DC', '#7A2A0C'];
+    var people = [
+      ['SP', 'Sunil P.', 'College referral', 'today 10:12', '3 km', 'evenings and weekends', [ok, review, review, ok, ok, ok, missing]],
+      ['NK', 'Neha K.', 'Society ambassador', 'today 9:40', '3 km', 'weekday mornings', [ok, review, ok, ok, ok, ok, ok]],
+      ['IA', 'Imran A.', 'Delivery partner', 'yesterday', '5 km', 'afternoons', [ok, ok, ok, ok, review, ok, missing]],
+      ['VS', 'Vikram S.', 'Helper referral', 'yesterday', '5 km', 'full days', [ok, review, review, ok, missing, missing, missing]],
+      ['PT', 'Pooja T.', 'Hostel noticeboard', '2 days ago', '2 km', 'weekends', [ok, ok, ok, ok, ok, review, ok]]
+    ];
+    var queue = people.map(function (p, i) {
+      var open = p[6].filter(function (c) { return c !== ok; }).length;
+      return {
+        initials: p[0], name: p[1], source: p[2], applied: p[3], radius: p[4], hours: p[5],
+        left: open + (open === 1 ? ' check left' : ' checks left'),
+        on: self.state.picked === i,
+        border: self.state.picked === i ? '#0E5A47' : '#DFE5DF',
+        pick: function () { self.setState({ picked: i }); },
+        checks: p[6].map(function (c, j) { return { label: labels[j], state: c[0], bg: c[1], fg: c[2] }; })
+      };
+    });
+    return { nav: nav, queue: queue, sel: queue[this.state.picked] || queue[0] };
+  }
+}
+</script>
+</body>
+</html>

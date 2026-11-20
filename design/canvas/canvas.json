@@ -1,0 +1,42 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-20T06:30:00Z"},
+  "title": "Sibimate — mobile app and admin dashboard",
+  "launch": {"view": "canvas", "page": "app"},
+  "pages": [
+    {"id": "app", "name": "Mobile app"},
+    {"id": "admin", "name": "Admin dashboard"}
+  ],
+  "boards": {
+    "Main.dc.html": {"x": 470, "y": 0, "w": 390, "h": 844, "title": "Home", "page": "app", "is_interactive": true, "radius": 28},
+    "Welcome.dc.html": {"x": 0, "y": 0, "w": 390, "h": 844, "title": "Welcome and sign in", "page": "app", "is_interactive": true, "radius": 28},
+    "CreateTask.dc.html": {"x": 940, "y": 0, "w": 390, "h": 844, "title": "Confirm task", "page": "app", "is_interactive": true, "radius": 28},
+    "Offers.dc.html": {"x": 1410, "y": 0, "w": 390, "h": 844, "title": "Helper offers", "page": "app", "is_interactive": true, "radius": 28},
+    "Tracking.dc.html": {"x": 1880, "y": 0, "w": 390, "h": 844, "title": "Task tracking", "page": "app", "is_interactive": true, "radius": 28},
+    "WorkerHome.dc.html": {"x": 0, "y": 1300, "w": 390, "h": 844, "title": "Nearby tasks", "page": "app", "is_interactive": true, "radius": 28},
+    "WorkerTask.dc.html": {"x": 470, "y": 1300, "w": 390, "h": 844, "title": "Task detail and quote", "page": "app", "is_interactive": true, "radius": 28},
+    "WorkerEarnings.dc.html": {"x": 940, "y": 1300, "w": 390, "h": 844, "title": "Earnings", "page": "app", "is_interactive": true, "radius": 28},
+    "AdminOverview.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 1060, "title": "Overview", "page": "admin", "expand": "fill", "is_interactive": true},
+    "AdminBookings.dc.html": {"x": 1520, "y": 0, "w": 1440, "h": 1060, "title": "Bookings", "page": "admin", "expand": "fill", "is_interactive": true},
+    "AdminWorkers.dc.html": {"x": 3040, "y": 0, "w": 1440, "h": 1060, "title": "Worker verification", "page": "admin", "expand": "fill", "is_interactive": true}
+  },
+  "order": [
+    "Main.dc.html",
+    "Welcome.dc.html",
+    "CreateTask.dc.html",
+    "Offers.dc.html",
+    "Tracking.dc.html",
+    "WorkerHome.dc.html",
+    "WorkerTask.dc.html",
+    "WorkerEarnings.dc.html",
+    "AdminOverview.dc.html",
+    "AdminBookings.dc.html",
+    "AdminWorkers.dc.html"
+  ],
+  "notes": {
+    "t-customer": {"x": 0, "y": -260, "text": "Customer mode", "kind": "title1", "maxW": 2270, "page": "app"},
+    "t-worker": {"x": 0, "y": 1040, "text": "Worker mode", "kind": "title1", "maxW": 1330, "page": "app"},
+    "n-sample": {"x": 1410, "y": 1300, "w": 380, "text": "Names, prices and figures on every screen are sample data for the Jaipur pilot. Press Play on a screen to walk the flow from sign in to tracking.", "page": "app", "fill": "green"}
+  },
+  "designSystems": []
+}

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Helper earnings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif}
+a{color:#F4B321}a:hover{color:#FFD060}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #13211C; color: #F4F6F2; display: flex; flex-direction: column; overflow: hidden">
+  <div style="padding: 60px 20px 0; display: flex; flex-direction: column; gap: 14px; flex-grow: 1">
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <span style="font-size: 14px; color: #B4C2BB">Earned this week, after fees</span>
+      <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 44px; line-height: 48px; font-weight: 700; letter-spacing: -1px">₹2,112</h1>
+      <span style="font-size: 14px; color: #B4C2BB">16 tasks completed</span>
+    </div>
+
+    <div role="img" aria-label="Daily earnings this week, highest on Thursday at 528 rupees" style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; align-items: end; height: 132px; padding: 16px; border-radius: 18px; background: #1D2E28">
+      <sc-for list="{{days}}" as="d" hint-placeholder-count="7">
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 8px; height: 100%">
+          <span style="width: 100%; height: {{d.h}}; border-radius: 6px; background: {{d.bg}}"></span>
+          <span style="font-size: 12px; color: #B4C2BB">{{d.day}}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border-radius: 18px; background: #F4B321; color: #13211C">
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <span style="font-size: 13px; font-weight: 600">Next payout, Monday</span>
+        <span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 24px; font-weight: 700">₹1,188</span>
+      </div>
+      <span style="font-size: 13px; font-weight: 600; text-align: right">To your UPI ID<br>ending @okaxis</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 18px; background: #1D2E28">
+      <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6FD3B4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><path d="M12 3l7 3v6c0 4.5-3 7.500-7 9-4-1.500-7-4.500-7-9V6z"/><path d="M8.500 12l2.500 2.500 4.500-5"/></svg>
+      <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1">
+        <span style="font-size: 15px; font-weight: 600">Verified helper</span>
+        <span style="font-size: 13px; line-height: 18px; color: #B4C2BB">You can take household and customer-facing tasks</span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; border-bottom: 1px solid #2E423B">
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <span style="font-size: 15px; font-weight: 500">Carry two suitcases</span>
+          <span style="font-size: 12px; color: #B4C2BB">Today 12:20 · ₹150 less ₹18 fee</span>
+        </div>
+        <span style="font-size: 16px; font-weight: 600">+ ₹132</span>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px">
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <span style="font-size: 15px; font-weight: 500">Grocery pickup</span>
+          <span style="font-size: 12px; color: #B4C2BB">Today 10:05 · ₹100 less ₹12 fee</span>
+        </div>
+        <span style="font-size: 16px; font-weight: 600">+ ₹88</span>
+      </div>
+    </div>
+  </div>
+
+  <nav aria-label="Helper" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 8px 12px 20px; background: #1D2E28; border-top: 1px solid #2E423B">
+    <a href="WorkerHome.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 52px; color: #B4C2BB; font-size: 12px; font-weight: 500; text-decoration: none">
+      <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+      <span>Nearby</span>
+    </a>
+    <a href="WorkerTask.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 52px; color: #B4C2BB; font-size: 12px; font-weight: 500; text-decoration: none">
+      <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>
+      <span>My jobs</span>
+    </a>
+    <a href="WorkerEarnings.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 52px; color: #F4B321; font-size: 12px; font-weight: 600; text-decoration: none">
+      <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h13v4"/><path d="M3 7v10a2 2 0 0 0 2 2h15V9H5a2 2 0 0 1-2-2z"/><path d="M16 14h.01"/></svg>
+      <span>Earnings</span>
+    </a>
+    <a href="Welcome.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 52px; color: #B4C2BB; font-size: 12px; font-weight: 500; text-decoration: none">
+      <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+      <span>Profile</span>
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var raw = [['Mon', 264], ['Tue', 396], ['Wed', 132], ['Thu', 528], ['Fri', 396], ['Sat', 396], ['Sun', 0]];
+    var days = raw.map(function (r) {
+      return { day: r[0], h: Math.max(4, Math.round(r[1] / 528 * 72)) + 'px', bg: r[0] === 'Sat' ? '#F4B321' : '#47605A' };
+    });
+    return { days: days };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sibimate home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif}
+a{color:#0E5A47}a:hover{color:#0A4335}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F4F6F2; color: #13211C; display: flex; flex-direction: column; overflow: hidden">
+  <div style="padding: 56px 20px 0; display: flex; flex-direction: column; gap: 20px; flex-grow: 1">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px">
+      <button type="button" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0; border: 0; background: none; color: #13211C; font: 600 15px Inter, system-ui, sans-serif; cursor: pointer">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0E5A47" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span>Mansarovar, Jaipur</span>
+      </button>
+      <div style="display: flex; padding: 4px; border-radius: 999px; background: #E2E8E1">
+        <span style="display: flex; align-items: center; min-height: 36px; padding: 0 16px; border-radius: 999px; background: #0E5A47; color: #FFFFFF; font-size: 14px; font-weight: 600">Hire</span>
+        <a href="WorkerHome.dc.html" style="display: flex; align-items: center; min-height: 36px; padding: 0 16px; border-radius: 999px; color: #13211C; font-size: 14px; font-weight: 600; text-decoration: none">Earn</a>
+      </div>
+    </div>
+
+    <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 32px; line-height: 36px; font-weight: 700; letter-spacing: -0.5px">What do you need done?</h1>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 20px; background: #FFFFFF; border: 1px solid #DFE5DF">
+      <label for="task" style="font-size: 13px; font-weight: 600; color: #55635D">Describe it in your own words</label>
+      <textarea id="task" rows="3" style="box-sizing: border-box; width: 100%; padding: 0; border: 0; resize: none; background: none; color: #13211C; font: 500 17px/24px Inter, system-ui, sans-serif">I need someone to carry two suitcases from Mansarovar metro station to my home.</textarea>
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px">
+        <span style="font-size: 13px; color: #55635D">Or speak in Hindi or English</span>
+        <button type="button" aria-label="Speak your task" style="display: flex; align-items: center; justify-content: center; width: 56px; height: 56px; border: 0; border-radius: 50%; background: #F4B321; color: #13211C; cursor: pointer">
+          <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 8px">
+      <button type="button" style="min-height: 44px; padding: 0 16px; border: 1px solid #C9D3CB; border-radius: 999px; background: #FFFFFF; color: #13211C; font: 500 14px Inter, system-ui, sans-serif; cursor: pointer">Carry luggage</button>
+      <button type="button" style="min-height: 44px; padding: 0 16px; border: 1px solid #C9D3CB; border-radius: 999px; background: #FFFFFF; color: #13211C; font: 500 14px Inter, system-ui, sans-serif; cursor: pointer">Grocery pickup</button>
+      <button type="button" style="min-height: 44px; padding: 0 16px; border: 1px solid #C9D3CB; border-radius: 999px; background: #FFFFFF; color: #13211C; font: 500 14px Inter, system-ui, sans-serif; cursor: pointer">Wait for a delivery</button>
+      <button type="button" style="min-height: 44px; padding: 0 16px; border: 1px solid #C9D3CB; border-radius: 999px; background: #FFFFFF; color: #13211C; font: 500 14px Inter, system-ui, sans-serif; cursor: pointer">Shift items</button>
+      <button type="button" style="min-height: 44px; padding: 0 16px; border: 1px solid #C9D3CB; border-radius: 999px; background: #FFFFFF; color: #13211C; font: 500 14px Inter, system-ui, sans-serif; cursor: pointer">Event setup</button>
+    </div>
+
+    <a href="CreateTask.dc.html" style="display: flex; align-items: center; justify-content: center; min-height: 56px; border-radius: 16px; background: #0E5A47; color: #FFFFFF; font-size: 17px; font-weight: 600; text-decoration: none">Find someone nearby</a>
+
+    <a href="Tracking.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 16px; background: #FFF3D1; color: #13211C; text-decoration: none">
+      <span style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: #F4B321">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#13211C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      </span>
+      <span style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1">
+        <span style="font-size: 15px; font-weight: 600">Parcel pickup in progress</span>
+        <span style="font-size: 13px; color: #4A4222">Aman is on the way, about 6 min</span>
+      </span>
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#13211C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+    </a>
+  </div>
+
+  <nav aria-label="Main" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 8px 12px 20px; background: #FFFFFF; border-top: 1px solid #DFE5DF">
+    <a href="Main.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 52px; color: #0E5A47; font-size: 12px; font-weight: 600; text-decoration: none">
+      <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="Offers.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 52px; color: #55635D; font-size: 12px; font-weight: 500; text-decoration: none">
+      <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>
+      <span>My tasks</span>
+    </a>
+    <a href="Tracking.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 52px; color: #55635D; font-size: 12px; font-weight: 500; text-decoration: none">
+      <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>
+      <span>Chats</span>
+    </a>
+    <a href="Welcome.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 52px; color: #55635D; font-size: 12px; font-weight: 500; text-decoration: none">
+      <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+      <span>Profile</span>
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

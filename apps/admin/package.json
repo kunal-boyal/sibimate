@@ -1,0 +1,28 @@
+{
+  "name": "@sibimate/admin",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@sibimate/shared": "workspace:*",
+    "@tanstack/react-query": "^5.108.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-router": "^7.0.0",
+    "socket.io-client": "^4.8.4",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/react": "~19.3.0",
+    "@types/react-dom": "~19.3.0",
+    "@vitejs/plugin-react": "latest",
+    "typescript": "~6.0.2",
+    "vite": "^8.0.0"
+  }
+}

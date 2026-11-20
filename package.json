@@ -1,0 +1,23 @@
+{
+  "name": "sibimate",
+  "private": true,
+  "packageManager": "pnpm@12.9.1",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "format": "prettier --write \"{apps,packages}/**/*.{ts,tsx,json}\"",
+    "db:up": "docker compose -f infra/docker-compose.yml up -d --wait",
+    "db:down": "docker compose -f infra/docker-compose.yml down",
+    "db:migrate": "pnpm --filter @sibimate/api db:migrate"
+  },
+  "devDependencies": {
+    "prettier": "^3.10.1",
+    "turbo": "^2.11.13",
+    "typescript": "~6.0.2"
+  }
+}

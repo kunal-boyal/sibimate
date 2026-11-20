@@ -1,0 +1,31 @@
+# Local PostgreSQL with PostGIS, and Redis. Start with `pnpm db:up`.
+name: sibimate
+services:
+  postgres:
+    # The official postgis/postgis image has no arm64 build; this one is its multi-arch twin.
+    image: imresamu/postgis:17-3.5
+    environment:
+      POSTGRES_USER: sibimate
+      POSTGRES_PASSWORD: sibimate
+      POSTGRES_DB: sibimate
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres-init.sql:/docker-entrypoint-initdb.d/20-sibimate.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sibimate -d sibimate"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+volumes:
+  pgdata:

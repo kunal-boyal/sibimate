@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sibimate welcome and sign in</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif}
+a{color:#F4B321}a:hover{color:#FFD060}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 72px 24px 28px; background: #0E5A47; color: #FFFFFF; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden">
+  <div style="display: flex; flex-direction: column; gap: 40px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <svg role="img" aria-label="Sibimate" width="44" height="32" viewBox="0 0 44 32"><circle cx="16" cy="16" r="14" fill="#F4B321"/><circle cx="28" cy="16" r="14" fill="none" stroke="#FFFFFF" stroke-width="4"/></svg>
+      <span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.5px">sibimate</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 16px">
+      <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 44px; line-height: 46px; font-weight: 700; letter-spacing: -1px">Koi bhi kaam.<br><span style="color: #F4B321">Sibimate ke naam.</span></h1>
+      <p style="margin: 0; font-size: 17px; line-height: 26px; color: #D9EBE4">Describe any everyday task. A verified helper nearby quotes a price and gets it done.</p>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <label for="phone" style="font-size: 14px; font-weight: 600; color: #D9EBE4">Mobile number</label>
+      <div style="display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 0 16px; border-radius: 16px; background: #FFFFFF">
+        <span style="font-size: 17px; font-weight: 600; color: #13211C">+91</span>
+        <span aria-hidden="true" style="width: 1px; height: 24px; background: #C9D3CB"></span>
+        <input id="phone" type="tel" inputmode="numeric" placeholder="98765 43210" style="flex-grow: 1; min-width: 0; height: 54px; padding: 0; border: 0; background: none; color: #13211C; font: 500 17px Inter, system-ui, sans-serif">
+      </div>
+    </div>
+    <a href="Main.dc.html" style="display: flex; align-items: center; justify-content: center; min-height: 56px; border-radius: 16px; background: #F4B321; color: #13211C; font-size: 17px; font-weight: 700; text-decoration: none">Send OTP</a>
+    <a href="WorkerHome.dc.html" style="display: flex; align-items: center; justify-content: center; min-height: 52px; border-radius: 16px; border: 1.5px solid #8FC2B2; color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none">I want to earn with Sibimate</a>
+    <div style="display: flex; justify-content: center; gap: 8px">
+      <button type="button" style="min-height: 44px; padding: 0 18px; border: 0; border-radius: 999px; background: #FFFFFF; color: #13211C; font: 600 14px Inter, system-ui, sans-serif; cursor: pointer">English</button>
+      <button type="button" lang="hi" style="min-height: 44px; padding: 0 18px; border: 1.5px solid #8FC2B2; border-radius: 999px; background: none; color: #FFFFFF; font: 600 14px Inter, system-ui, sans-serif; cursor: pointer">हिन्दी</button>
+    </div>
+    <p style="margin: 0; text-align: center; font-size: 12px; line-height: 18px; color: #D9EBE4">By continuing you agree to the terms and privacy policy at sibimate.in</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
