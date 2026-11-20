@@ -62,6 +62,11 @@ export const users = pgTable('users', {
     .notNull()
     .default(sql`ARRAY['customer']::user_role[]`),
   status: userStatusEnum('status').notNull().default('active'),
+  /** The privacy notice version the person last agreed to, and when. */
+  consentVersion: text('consent_version'),
+  consentedAt: at('consented_at'),
+  /** When the person deleted their account. Their details are removed at that moment. */
+  deletedAt: at('deleted_at'),
   ...timestamps,
 });
 

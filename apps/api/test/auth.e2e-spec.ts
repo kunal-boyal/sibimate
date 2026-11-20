@@ -37,6 +37,7 @@ describe('OTP sign-in (e2e)', () => {
   async function signIn(phone = PHONE, deviceId = DEVICE) {
     await post('/auth/otp/request', { phone, deviceId }).expect(200);
     const response = await post('/auth/otp/verify', {
+      acceptedNotice: true,
       phone,
       code: sms.lastCode,
       deviceId,
@@ -87,6 +88,7 @@ describe('OTP sign-in (e2e)', () => {
     expect(sms.sent).toEqual([{ phone: PHONE, code: expect.stringMatching(/^\d{6}$/) }]);
 
     const verified = await post('/auth/otp/verify', {
+      acceptedNotice: true,
       phone: PHONE,
       code: sms.lastCode,
       deviceId: DEVICE,
@@ -173,12 +175,14 @@ describe('OTP sign-in (e2e)', () => {
   it('rejects a wrong code and then accepts the right one', async () => {
     await post('/auth/otp/request', { phone: PHONE, deviceId: DEVICE }).expect(200);
     const wrong = await post('/auth/otp/verify', {
+      acceptedNotice: true,
       phone: PHONE,
       code: wrongCode(),
       deviceId: DEVICE,
     }).expect(400);
     expect(wrong.body.code).toBe('otp_invalid');
     await post('/auth/otp/verify', {
+      acceptedNotice: true,
       phone: PHONE,
       code: sms.lastCode,
       deviceId: DEVICE,
@@ -189,12 +193,14 @@ describe('OTP sign-in (e2e)', () => {
     await post('/auth/otp/request', { phone: PHONE, deviceId: DEVICE }).expect(200);
     for (let i = 0; i < OTP_RULES.maxAttempts; i++) {
       await post('/auth/otp/verify', {
+        acceptedNotice: true,
         phone: PHONE,
         code: wrongCode(),
         deviceId: DEVICE,
       }).expect(400);
     }
     const locked = await post('/auth/otp/verify', {
+      acceptedNotice: true,
       phone: PHONE,
       code: sms.lastCode,
       deviceId: DEVICE,
@@ -205,6 +211,7 @@ describe('OTP sign-in (e2e)', () => {
   it('accepts a code once', async () => {
     await signIn();
     const again = await post('/auth/otp/verify', {
+      acceptedNotice: true,
       phone: PHONE,
       code: sms.lastCode,
       deviceId: DEVICE,
@@ -215,6 +222,7 @@ describe('OTP sign-in (e2e)', () => {
   it('accepts a code only on the device that asked for it', async () => {
     await post('/auth/otp/request', { phone: PHONE, deviceId: DEVICE }).expect(200);
     const other = await post('/auth/otp/verify', {
+      acceptedNotice: true,
       phone: PHONE,
       code: sms.lastCode,
       deviceId: 'device-bbbb-2222',
@@ -226,6 +234,7 @@ describe('OTP sign-in (e2e)', () => {
     await post('/auth/otp/request', { phone: PHONE, deviceId: DEVICE }).expect(200);
     await db.execute(sql`update otp_challenges set expires_at = now() - interval '1 second'`);
     const expired = await post('/auth/otp/verify', {
+      acceptedNotice: true,
       phone: PHONE,
       code: sms.lastCode,
       deviceId: DEVICE,

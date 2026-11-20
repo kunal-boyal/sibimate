@@ -18,7 +18,12 @@ import {
   type AdminTaskList,
   type ApproveHelper,
   type AssignHelper,
+  type AdminCategory,
   type AdminDispute,
+  type ApproveCategory,
+  type MergeCategory,
+  approveCategorySchema,
+  mergeCategorySchema,
   type AdminOverview,
   type HelperApplicationDetail,
   type ResolveDispute,
@@ -42,6 +47,7 @@ import { HelpersService } from '../helpers/helpers.service.js';
 import { OnboardingService } from '../onboarding/onboarding.service.js';
 import { SettingsService } from '../settings/settings.service.js';
 import { DisputesService } from '../disputes/disputes.service.js';
+import { CategoriesService } from './categories.service.js';
 import { OverviewService } from './overview.service.js';
 import { AuditService } from './audit.service.js';
 import { AdminGuard, AdminRoles, CurrentAdmin } from './admin.guard.js';
@@ -62,6 +68,7 @@ export class AdminController {
     private readonly settings: SettingsService,
     private readonly disputes: DisputesService,
     private readonly overview: OverviewService,
+    private readonly categories: CategoriesService,
   ) {}
 
   @Get('tasks')
@@ -121,6 +128,37 @@ export class AdminController {
   ): Promise<void> {
     await this.disputes.resolve(id, body.resolution, body.note, admin.id);
     await this.audit.record(admin, 'dispute.resolve', 'dispute', id, { resolution: body.resolution });
+  }
+
+  @Get('categories')
+  async listCategories(): Promise<{ items: AdminCategory[] }> {
+    return { items: await this.categories.list() };
+  }
+
+  /** Approves a category the model proposed, with any corrections, so it is offered from now on. */
+  @Post('categories/:id/approve')
+  @HttpCode(204)
+  @AdminRoles('owner', 'operations')
+  async approveCategory(
+    @CurrentAdmin() admin: Admin,
+    @Param('id', Uuid('Category')) id: string,
+    @Body({ schema: approveCategorySchema }) body: ApproveCategory,
+  ): Promise<void> {
+    await this.categories.approve(id, body);
+    await this.audit.record(admin, 'category.approve', 'task_category', id, body);
+  }
+
+  /** Folds a proposed category into an existing one; its tasks move across. */
+  @Post('categories/:id/merge')
+  @HttpCode(204)
+  @AdminRoles('owner', 'operations')
+  async mergeCategory(
+    @CurrentAdmin() admin: Admin,
+    @Param('id', Uuid('Category')) id: string,
+    @Body({ schema: mergeCategorySchema }) body: MergeCategory,
+  ): Promise<void> {
+    await this.categories.merge(id, body.intoId);
+    await this.audit.record(admin, 'category.merge', 'task_category', id, { intoId: body.intoId });
   }
 
   @Get('settings')

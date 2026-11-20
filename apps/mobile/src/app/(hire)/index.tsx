@@ -22,7 +22,6 @@ const SUGGESTIONS = ['carry', 'grocery', 'wait', 'shift', 'event'] as const;
 export default function Home() {
   const t = useT();
   const router = useRouter();
-  const signOut = useSession((state) => state.signOut);
   const text = useDraft((state) => state.text);
   const setText = useDraft((state) => state.setText);
   const setInterpretation = useDraft((state) => state.setInterpretation);
@@ -67,7 +66,7 @@ export default function Home() {
           {!isHelper ? (
             <Button label={t('apply.link')} variant="secondary" size="md" onPress={() => router.push('/earn/apply')} />
           ) : null}
-          <Button label={t('home.signOut')} variant="ghost" size="sm" onPress={() => void signOut()} />
+          <Button label={t('account.title')} variant="ghost" size="sm" onPress={() => router.push('/account')} />
         </>
       }
     >

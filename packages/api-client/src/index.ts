@@ -70,7 +70,7 @@ export interface ApiClientOptions {
 }
 
 interface RequestOptions<S extends z.ZodType | undefined> {
-  method?: 'GET' | 'POST' | 'PATCH' | 'PUT';
+  method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   body?: unknown;
   schema?: S;
   /** Send the access token, and refresh it once on a 401. Default true. */
@@ -172,7 +172,8 @@ export function createApiClient(options: ApiClientOptions) {
     verifyOtp: (phone: string, code: string): Promise<OtpVerifyResponse> =>
       request('/auth/otp/verify', {
         method: 'POST',
-        body: { phone, code, deviceId: options.deviceId() } satisfies OtpVerify,
+        // Called only after the person has agreed to the privacy notice on screen.
+        body: { phone, code, deviceId: options.deviceId(), acceptedNotice: true } satisfies OtpVerify,
         schema: otpVerifyResponseSchema,
         auth: false,
       }),
@@ -183,6 +184,9 @@ export function createApiClient(options: ApiClientOptions) {
         body: { refreshToken },
         auth: false,
       }),
+
+    /** Deletes the account and the person's details. Refused with `account_busy` while work is open. */
+    deleteAccount: (): Promise<void> => request('/me', { method: 'DELETE' }),
 
     getMe: (): Promise<User> => request('/me', { schema: userSchema }),
 

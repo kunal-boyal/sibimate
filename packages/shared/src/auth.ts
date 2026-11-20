@@ -29,10 +29,18 @@ export const otpRequestResponseSchema = z.object({
 });
 export type OtpRequestResponse = z.infer<typeof otpRequestResponseSchema>;
 
+/**
+ * The version of the privacy notice people agree to when they sign in. Change it
+ * whenever the notice changes: everyone is then asked to agree again.
+ */
+export const PRIVACY_NOTICE_VERSION = '2026-11-20';
+
 export const otpVerifySchema = z.object({
   phone: phoneSchema,
   code: z.string().regex(new RegExp(`^\\d{${OTP_LENGTH}}$`), 'Enter the 6-digit code'),
   deviceId: deviceIdSchema,
+  /** The person has read the privacy notice and agrees to it. Signing in is not possible without. */
+  acceptedNotice: z.literal(true, 'Agree to the privacy notice to continue'),
 });
 export type OtpVerify = z.infer<typeof otpVerifySchema>;
 

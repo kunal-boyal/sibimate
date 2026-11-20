@@ -53,7 +53,10 @@ describe('From application to first task (e2e)', () => {
   async function signIn(phone: string) {
     const deviceId = `device-${phone}`;
     await http().post('/v1/auth/otp/request').send({ phone, deviceId }).expect(200);
-    const verified = await http().post('/v1/auth/otp/verify').send({ phone, code: sms.lastCode, deviceId }).expect(200);
+    const verified = await http()
+      .post('/v1/auth/otp/verify')
+      .send({ acceptedNotice: true, phone, code: sms.lastCode, deviceId })
+      .expect(200);
     return verified.body.accessToken as string;
   }
 
@@ -313,6 +316,67 @@ describe('From application to first task (e2e)', () => {
       expect(rows).toEqual([
         { action: 'settings.update', meta: { before: { cancellationFee: 3000 }, after: { cancellationFee: 4000 } } },
       ]);
+    });
+  });
+
+  describe('privacy', () => {
+    it('signs in only with consent to the privacy notice, and records which version', async () => {
+      await http()
+        .post('/v1/auth/otp/request')
+        .send({ phone: '+919811111111', deviceId: 'device-consent' })
+        .expect(200);
+      const refused = await http()
+        .post('/v1/auth/otp/verify')
+        .send({ phone: '+919811111111', code: sms.lastCode, deviceId: 'device-consent' })
+        .expect(400);
+      expect(refused.body.details).toEqual([{ path: 'acceptedNotice', message: expect.any(String) }]);
+      const { rows } = await db.execute(sql`select consent_version from users where phone = '+919876543210'`);
+      expect(rows).toEqual([{ consent_version: '2026-11-20' }]);
+    });
+
+    it('deletes an account and the person’s details, but not while work is open', async () => {
+      await as(applicant).post('/helper/profile', APPLICATION).expect(201);
+      await upload(applicant, 'identity').expect(201);
+      const [application] = await applications();
+      await as(verifier)
+        .post(`/admin/applications/${application.id}/approve`, { verificationLevel: 'basic' })
+        .expect(204);
+      await as(applicant).put('/helper/availability', { isOnline: true, location: HOME }).expect(200);
+      const posted = await as(applicant)
+        .post('/tasks', {
+          title: 'Carry two suitcases',
+          description: 'Call me on 98123 45678 when you reach the station.',
+          requiresSkilled: false,
+          customerPrice: 15000,
+          pickup: HOME,
+          address: '14 Shanti Path, Sector 7, Mansarovar',
+          paymentMethod: 'cash',
+        })
+        .set('Idempotency-Key', randomUUID())
+        .expect(201);
+
+      const busy = await http().delete('/v1/me').set('Authorization', `Bearer ${applicant}`).expect(409);
+      expect(busy.body.code).toBe('account_busy');
+      await as(applicant).post(`/tasks/${posted.body.id}/cancel`).expect(200);
+      await http().delete('/v1/me').set('Authorization', `Bearer ${applicant}`).expect(204);
+
+      // Signed out everywhere, and the details are gone.
+      await as(applicant).get('/me').expect(401);
+      const { rows } = await db.execute(
+        sql`select phone, name, status, deleted_at from users where phone like 'deleted:%'`,
+      );
+      expect(rows).toEqual([
+        { phone: expect.stringMatching(/^deleted:/), name: null, status: 'deleted', deleted_at: expect.anything() },
+      ]);
+      const documents = await db.execute(sql`select count(*)::int as n from helper_documents`);
+      expect(documents.rows).toEqual([{ n: 0 }]);
+      const taskRow = await db.execute(sql`select description_raw from tasks where id = ${posted.body.id}`);
+      expect(taskRow.rows).toEqual([{ description_raw: '' }]);
+      expect((await as(verifier).get('/admin/helpers').expect(200)).body.items[0].status).toBe('paused');
+
+      // The number can sign up again, as a new person.
+      const fresh = await signIn('+919812345678');
+      expect((await as(fresh).get('/helper/profile').expect(200)).body.profile).toBeNull();
     });
   });
 });

@@ -2,7 +2,7 @@ import { normalizeIndianMobile } from '@sibimate/shared';
 import { colors, space } from '@sibimate/ui-tokens';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { BrandScreen } from '@/components/BrandScreen';
 import { Button } from '@/components/Button';
 import { LanguageToggle } from '@/components/LanguageToggle';
@@ -20,11 +20,16 @@ export default function Welcome() {
   const [number, setNumber] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<TranslationKey | null>(null);
+  const [agreed, setAgreed] = useState(false);
 
   async function sendOtp() {
     const phone = normalizeIndianMobile(number);
     if (!phone) {
       setError('welcome.phoneInvalid');
+      return;
+    }
+    if (!agreed) {
+      setError('welcome.agreeMissing');
       return;
     }
     setError(null);
@@ -93,12 +98,49 @@ export default function Welcome() {
           returnKeyType="send"
           maxLength={16}
         />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[12] }}>
+          <Pressable
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: agreed }}
+            accessibilityLabel={t('welcome.agree')}
+            onPress={() => {
+              setAgreed(!agreed);
+              setError(null);
+            }}
+            hitSlop={10}
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: 6,
+              borderWidth: 2,
+              borderColor: agreed ? colors.accent : colors.brandLine,
+              backgroundColor: agreed ? colors.accent : 'transparent',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {agreed ? (
+              <Text variant="caption" weight={700} color={colors.onAccent}>
+                ✓
+              </Text>
+            ) : null}
+          </Pressable>
+          <Text variant="bodySm" color={colors.onBrandMuted} style={{ flex: 1 }}>
+            {t('welcome.agree')}{' '}
+            <Text
+              variant="bodySm"
+              weight={600}
+              color={colors.accent}
+              accessibilityRole="link"
+              onPress={() => router.push('/privacy')}
+            >
+              {t('welcome.readNotice')}
+            </Text>
+          </Text>
+        </View>
         {error ? <Notice variant="alert">{t(error)}</Notice> : null}
         <Button label={t('welcome.sendOtp')} variant="accent" loading={sending} onPress={() => void sendOtp()} />
         <LanguageToggle />
-        <Text variant="micro" weight={400} color={colors.onBrandMuted} style={{ textAlign: 'center' }}>
-          {t('welcome.terms')}
-        </Text>
       </View>
     </BrandScreen>
   );

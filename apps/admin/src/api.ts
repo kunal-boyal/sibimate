@@ -5,7 +5,10 @@ import {
   type CreateHelper,
   type ErrorCode,
   type Helper,
+  type AdminCategory,
   type AdminDispute,
+  type ApproveCategory,
+  adminCategoryListSchema,
   type AdminOverview,
   type DisputeResolution,
   adminDisputeListSchema,
@@ -94,6 +97,12 @@ export const api = {
   assign: (taskId: string, helperId: string) =>
     request(`/admin/tasks/${taskId}/assign`, { method: 'POST', body: { helperId } }),
   helpers: (): Promise<HelperList> => request('/admin/helpers', { schema: helperListSchema }),
+  categories: (): Promise<{ items: AdminCategory[] }> =>
+    request('/admin/categories', { schema: adminCategoryListSchema }),
+  approveCategory: (id: string, changes: ApproveCategory) =>
+    request(`/admin/categories/${id}/approve`, { method: 'POST', body: changes }),
+  mergeCategory: (id: string, intoId: string) =>
+    request(`/admin/categories/${id}/merge`, { method: 'POST', body: { intoId } }),
   overview: (): Promise<AdminOverview> => request('/admin/overview', { schema: adminOverviewSchema }),
   disputes: (status: 'open' | 'resolved'): Promise<{ items: AdminDispute[] }> =>
     request(`/admin/disputes?status=${status}`, { schema: adminDisputeListSchema }),

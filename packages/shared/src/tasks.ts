@@ -192,3 +192,34 @@ export const VOICE_MIME_TYPES = [
 /** About two minutes at the app's recording quality. */
 export const VOICE_MAX_BYTES = 5 * 1024 * 1024;
 export const VOICE_MAX_SECONDS = 90;
+
+// Categories, as the dashboard sees them
+
+export const adminCategorySchema = z.object({
+  id: z.uuid(),
+  slug: z.string(),
+  name: z.string(),
+  requiresSkilled: z.boolean(),
+  minVerificationLevel: z.enum(VERIFICATION_LEVELS),
+  /** seed: the starting list. ai: proposed by the model. admin: added by an admin. */
+  source: z.enum(['seed', 'ai', 'admin']),
+  reviewStatus: z.enum(['approved', 'pending', 'rejected']),
+  active: z.boolean(),
+  /** Tasks filed under this category. */
+  taskCount: z.number().int(),
+});
+export type AdminCategory = z.infer<typeof adminCategorySchema>;
+
+export const adminCategoryListSchema = z.object({ items: z.array(adminCategorySchema) });
+
+/** Approving a proposed category, with any corrections. Approved categories are offered to the model. */
+export const approveCategorySchema = z.object({
+  name: z.string().trim().min(2).max(60),
+  requiresSkilled: z.boolean(),
+  minVerificationLevel: z.enum(VERIFICATION_LEVELS),
+});
+export type ApproveCategory = z.infer<typeof approveCategorySchema>;
+
+/** Folding a proposed category into an existing one: its tasks move across. */
+export const mergeCategorySchema = z.object({ intoId: z.uuid() });
+export type MergeCategory = z.infer<typeof mergeCategorySchema>;

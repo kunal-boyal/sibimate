@@ -13,6 +13,8 @@ import type { Database } from '../src/db/db.js';
 import { MatchingScheduler } from '../src/matching/matching-scheduler.js';
 import { SpeechToText } from '../src/interpretation/speech-to-text.js';
 import { TaskInterpreter } from '../src/interpretation/task-interpreter.js';
+import { AdminAuthService } from '../src/admin/admin-auth.service.js';
+import { totpCode, totpStep } from '../src/admin/totp.js';
 
 class FakeSmsSender extends SmsSender {
   lastCode = '';
@@ -56,7 +58,10 @@ describe('Posting a task (e2e)', () => {
   async function signIn(phone: string) {
     const deviceId = `device-${phone}`;
     await http().post('/v1/auth/otp/request').send({ phone, deviceId }).expect(200);
-    const verified = await http().post('/v1/auth/otp/verify').send({ phone, code: sms.lastCode, deviceId }).expect(200);
+    const verified = await http()
+      .post('/v1/auth/otp/verify')
+      .send({ acceptedNotice: true, phone, code: sms.lastCode, deviceId })
+      .expect(200);
     return verified.body.accessToken as string;
   }
 
@@ -97,7 +102,9 @@ describe('Posting a task (e2e)', () => {
   });
 
   beforeEach(async () => {
-    await db.execute(sql`truncate table users, otp_challenges, refresh_tokens, tasks, task_interpretations cascade`);
+    await db.execute(
+      sql`truncate table users, otp_challenges, refresh_tokens, tasks, task_interpretations, admin_users, admin_sessions, audit_log cascade`,
+    );
     await db.execute(sql`delete from task_categories where source = 'ai'`);
     asha = await signIn('+919876543210');
     Object.assign(speech, { available: true, heard: '', received: [] });
@@ -287,6 +294,75 @@ describe('Posting a task (e2e)', () => {
         sql`select source, review_status, active from task_categories where slug = 'pet-care'`,
       );
       expect(rows).toEqual([{ source: 'ai', review_status: 'pending', active: false }]);
+    });
+
+    it('lets an admin approve or merge a category the model proposed', async () => {
+      const proposal = (name: string) => ({
+        title: `Walk my dog ${name}`,
+        description: 'Walk a friendly labrador around the park for half an hour.',
+        categorySlug: null,
+        proposedCategory: name,
+        requiresSkilled: false,
+        helpersNeeded: 1,
+        estimatedMinutes: { min: 30, max: 40 },
+        requirements: [],
+        riskFlags: [],
+        followUpQuestion: null,
+        confidence: 0.9,
+      });
+      for (const name of ['Pet care', 'Dog walking']) {
+        vi.spyOn(interpreter, 'interpret').mockResolvedValueOnce(proposal(name));
+        const draft = await interpret(asha, `Someone to walk my dog, ${name}`);
+        await postTask(asha, taskBody({ interpretationId: draft.id, title: draft.title })).expect(201);
+      }
+      const { totpSecret } = await app
+        .get(AdminAuthService)
+        .upsertAdmin('ops@sibimate.test', 'a long test password', 'operations');
+      const admin = (
+        await http()
+          .post('/v1/admin/auth/login')
+          .send({
+            email: 'ops@sibimate.test',
+            password: 'a long test password',
+            code: totpCode(totpSecret, totpStep(new Date())),
+          })
+          .expect(200)
+      ).body.token as string;
+      const list = async () =>
+        (await http().get('/v1/admin/categories').set('Authorization', `Bearer ${admin}`).expect(200)).body.items;
+      const [first, second] = await list();
+      expect([first.reviewStatus, second.reviewStatus, first.taskCount]).toEqual(['pending', 'pending', 1]);
+      const petCare = [first, second].find((item: { slug: string }) => item.slug === 'pet-care');
+      const dogWalking = [first, second].find((item: { slug: string }) => item.slug === 'dog-walking');
+
+      await http()
+        .post(`/v1/admin/categories/${petCare.id}/approve`)
+        .set('Authorization', `Bearer ${admin}`)
+        .send({ name: 'Pet care', requiresSkilled: false, minVerificationLevel: 'verified' })
+        .expect(204);
+      await http()
+        .post(`/v1/admin/categories/${dogWalking.id}/merge`)
+        .set('Authorization', `Bearer ${admin}`)
+        .send({ intoId: petCare.id })
+        .expect(204);
+      const after = await list();
+      expect(after.find((item: { id: string }) => item.id === petCare.id)).toMatchObject({
+        active: true,
+        reviewStatus: 'approved',
+        taskCount: 2,
+      });
+      expect(after.find((item: { id: string }) => item.id === dogWalking.id)).toMatchObject({
+        active: false,
+        reviewStatus: 'rejected',
+        taskCount: 0,
+      });
+
+      // The approved category is now offered to the model, and the merged one is not.
+      const seen = vi.spyOn(interpreter, 'interpret');
+      await interpret(asha);
+      const slugs = seen.mock.calls.at(-1)![0].categories.map((category) => category.slug);
+      expect(slugs).toContain('pet-care');
+      expect(slugs).not.toContain('dog-walking');
     });
 
     it('returns the same task when a request is retried with its key', async () => {

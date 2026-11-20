@@ -25,6 +25,7 @@ export const ERROR_CODES = [
   'code_locked',
   'offer_unavailable',
   'documents_missing',
+  'account_busy',
   'internal',
 ] as const;
 

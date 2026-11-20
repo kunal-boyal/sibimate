@@ -229,6 +229,41 @@ export const en = {
   'dispute.openOther': 'A problem was reported with this job. Sibimate is looking into it and may call you.',
   'dispute.released': 'Sibimate decided the helper is paid in full.',
   'dispute.refunded': 'Sibimate decided the customer owes nothing for this job.',
+  'welcome.agree': 'I agree to how Sibimate uses my information.',
+  'welcome.readNotice': 'Read the privacy notice',
+  'welcome.agreeMissing': 'Tick the box to agree to the privacy notice.',
+  'account.title': 'Account',
+  'account.privacy': 'Privacy notice',
+  'account.deleteTitle': 'Delete your account',
+  'account.deleteBody':
+    'Your name, number, addresses, documents and location are removed. Records of past jobs stay, without your details, as the law requires.',
+  'account.delete': 'Delete my account',
+  'account.deleteConfirm': 'This cannot be undone. Delete your account now?',
+  'account.deleteYes': 'Yes, delete it',
+  'account.keep': 'Keep my account',
+  'errors.account_busy': 'Finish or cancel your open tasks and jobs first.',
+  'privacy.title': 'Privacy notice',
+  'privacy.intro':
+    'This explains, in plain words, what Sibimate collects about you, why, and what you can do about it.',
+  'privacy.collect.title': 'What we collect',
+  'privacy.collect.body':
+    'Your mobile number and name. What you ask for in a task, typed or spoken, its address and price. Your location while a task of yours is looking for a helper, and, if you are a helper, while you are online or on a job. Helpers also give us photos of their ID and documents, and an emergency contact.',
+  'privacy.use.title': 'Why we use it',
+  'privacy.use.body':
+    'To sign you in, to find a helper near you or tasks near you, to show each side what they need for the job, to keep people safe, and to settle problems. We do not sell your information.',
+  'privacy.voice.title': 'Voice and AI',
+  'privacy.voice.body':
+    'When you speak or type a task, your words are sent to OpenAI to write the task details. A recording is used only to turn it into text and is not kept. Phone numbers and email addresses are removed from your words first.',
+  'privacy.share.title': 'Who sees what',
+  'privacy.share.body':
+    'A helper sees the area and distance of a task, and your exact address and number only once they are confirmed for it. Only the Sibimate staff who check helpers can open helpers’ documents, and every time they do it is recorded.',
+  'privacy.keep.title': 'How long we keep it',
+  'privacy.keep.body':
+    'Your location is not kept after a job. Records of jobs and payments are kept as long as the law requires, without your details once you delete your account.',
+  'privacy.rights.title': 'Your choices',
+  'privacy.rights.body':
+    'You can see and change your name and language, and delete your account at any time from the Account page. For anything else, contact Sibimate through sibimate.in.',
+  'privacy.version': 'Version of {version}. This notice is a draft until it has been reviewed by a lawyer.',
   'errors.network': 'No connection. Check your internet and try again.',
 } as const;
 

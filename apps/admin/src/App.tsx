@@ -5,6 +5,7 @@ import { io } from 'socket.io-client';
 import { API_ORIGIN, api, session, setOnSignedOut } from './api';
 import { Bookings } from './pages/Bookings';
 import { Helpers } from './pages/Helpers';
+import { Categories } from './pages/Categories';
 import { Disputes } from './pages/Disputes';
 import { Login } from './pages/Login';
 import { Overview } from './pages/Overview';
@@ -81,6 +82,7 @@ export function App() {
           <NavLink to="/bookings">Bookings</NavLink>
           <NavLink to="/disputes">Disputes</NavLink>
           <NavLink to="/helpers">Helpers</NavLink>
+          <NavLink to="/categories">Categories</NavLink>
           <NavLink to="/settings">Settings</NavLink>
         </nav>
         <div className="sidebar-foot">
@@ -100,6 +102,7 @@ export function App() {
           <Route path="/bookings" element={<Bookings />} />
           <Route path="/disputes" element={<Disputes />} />
           <Route path="/helpers" element={<Helpers />} />
+          <Route path="/categories" element={<Categories />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

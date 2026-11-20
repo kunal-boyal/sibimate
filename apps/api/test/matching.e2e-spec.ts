@@ -55,7 +55,10 @@ describe('Matching and offers (e2e)', () => {
   async function signIn(phone: string) {
     const deviceId = `device-${phone}`;
     await http().post('/v1/auth/otp/request').send({ phone, deviceId }).expect(200);
-    const verified = await http().post('/v1/auth/otp/verify').send({ phone, code: sms.lastCode, deviceId }).expect(200);
+    const verified = await http()
+      .post('/v1/auth/otp/verify')
+      .send({ acceptedNotice: true, phone, code: sms.lastCode, deviceId })
+      .expect(200);
     return verified.body.accessToken as string;
   }
 

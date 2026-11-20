@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDrizzle } from '@nestjs/drizzle';
 import type { UpdateMe, User } from '@sibimate/shared';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull, ne, or } from 'drizzle-orm';
 import type { Database } from '../db/db.js';
 import { type UserRow, users } from '../db/schema.js';
 
@@ -27,6 +27,14 @@ export class UsersRepository {
     }
     const [existing] = await this.db.select().from(users).where(eq(users.phone, phone));
     return { user: existing!, created: false };
+  }
+
+  /** Records that the person agreed to this version of the privacy notice, if they had not already. */
+  async recordConsent(id: string, version: string): Promise<void> {
+    await this.db
+      .update(users)
+      .set({ consentVersion: version, consentedAt: new Date() })
+      .where(and(eq(users.id, id), or(isNull(users.consentVersion), ne(users.consentVersion, version))));
   }
 
   async update(id: string, changes: UpdateMe): Promise<UserRow | undefined> {

@@ -57,6 +57,13 @@
       "when": 1795187152705,
       "tag": "0007_gifted_silver_sable",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795187798922,
+      "tag": "0008_cooing_selene",
+      "breakpoints": true
     }
   ]
 }

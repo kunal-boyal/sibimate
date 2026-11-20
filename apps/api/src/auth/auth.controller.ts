@@ -1,6 +1,7 @@
 import { Public, TokenService } from '@nestjs/authentication';
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import {
+  PRIVACY_NOTICE_VERSION,
   type LogoutRequest,
   type OtpRequest,
   type OtpRequestResponse,
@@ -41,6 +42,7 @@ export class AuthController {
     if (user.status !== 'active') {
       throw new ApiException(403, 'forbidden', 'This account cannot sign in.');
     }
+    await this.usersRepository.recordConsent(user.id, PRIVACY_NOTICE_VERSION);
 
     // `did` ties the refresh-token family to the device that signed in.
     const tokens = await this.tokenService.issue(user.id, {
