@@ -298,6 +298,10 @@ export function createApiClient(options: ApiClientOptions) {
       return request('/helper/documents', { method: 'POST', body: form, schema: helperProfileSchema });
     },
 
+    /** Reports a problem with a job: either side, within the dispute window. */
+    raiseDispute: (bookingId: string, reason: string): Promise<void> =>
+      request(`/bookings/${bookingId}/dispute`, { method: 'POST', body: { reason } }),
+
     /** Rates the other side of a paid job, from 1 to 5. */
     reviewBooking: (bookingId: string, rating: number, comment?: string): Promise<void> =>
       request(`/bookings/${bookingId}/review`, { method: 'POST', body: { rating, comment } }),

@@ -219,6 +219,16 @@ export const en = {
   'rating.send': 'Send rating',
   'rating.value': 'Rated {rating}',
   'errors.documents_missing': 'Some documents are missing.',
+  'dispute.report': 'Report a problem',
+  'dispute.noCode': 'Customer not giving the code?',
+  'dispute.title': 'What went wrong?',
+  'dispute.intro': 'A person at Sibimate reads every report, talks to both of you, and decides what is owed.',
+  'dispute.placeholder': 'Describe what happened',
+  'dispute.send': 'Send report',
+  'dispute.openMine': 'You reported a problem. Sibimate is looking into it and will decide what is owed.',
+  'dispute.openOther': 'A problem was reported with this job. Sibimate is looking into it and may call you.',
+  'dispute.released': 'Sibimate decided the helper is paid in full.',
+  'dispute.refunded': 'Sibimate decided the customer owes nothing for this job.',
   'errors.network': 'No connection. Check your internet and try again.',
 } as const;
 

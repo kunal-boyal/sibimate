@@ -18,7 +18,11 @@ import {
   type AdminTaskList,
   type ApproveHelper,
   type AssignHelper,
+  type AdminDispute,
+  type AdminOverview,
   type HelperApplicationDetail,
+  type ResolveDispute,
+  resolveDisputeSchema,
   type PlatformSettingsResponse,
   type UpdatePlatformSettings,
   updatePlatformSettingsSchema,
@@ -37,6 +41,8 @@ import { ApiException } from '../common/api-exception.js';
 import { HelpersService } from '../helpers/helpers.service.js';
 import { OnboardingService } from '../onboarding/onboarding.service.js';
 import { SettingsService } from '../settings/settings.service.js';
+import { DisputesService } from '../disputes/disputes.service.js';
+import { OverviewService } from './overview.service.js';
 import { AuditService } from './audit.service.js';
 import { AdminGuard, AdminRoles, CurrentAdmin } from './admin.guard.js';
 
@@ -54,6 +60,8 @@ export class AdminController {
     private readonly onboarding: OnboardingService,
     private readonly audit: AuditService,
     private readonly settings: SettingsService,
+    private readonly disputes: DisputesService,
+    private readonly overview: OverviewService,
   ) {}
 
   @Get('tasks')
@@ -90,6 +98,29 @@ export class AdminController {
       verificationLevel: helper.verificationLevel,
     });
     return helper;
+  }
+
+  @Get('overview')
+  getOverview(): Promise<AdminOverview> {
+    return this.overview.get();
+  }
+
+  @Get('disputes')
+  async listDisputes(@Query('status') status?: string): Promise<{ items: AdminDispute[] }> {
+    return { items: await this.disputes.list(status === 'resolved' ? 'resolved' : 'open') };
+  }
+
+  /** Decides a dispute: the helper is owed the price (release), or the customer owes nothing (refund). */
+  @Post('disputes/:id/resolve')
+  @HttpCode(204)
+  @AdminRoles('owner', 'operations')
+  async resolveDispute(
+    @CurrentAdmin() admin: Admin,
+    @Param('id', Uuid('Dispute')) id: string,
+    @Body({ schema: resolveDisputeSchema }) body: ResolveDispute,
+  ): Promise<void> {
+    await this.disputes.resolve(id, body.resolution, body.note, admin.id);
+    await this.audit.record(admin, 'dispute.resolve', 'dispute', id, { resolution: body.resolution });
   }
 
   @Get('settings')

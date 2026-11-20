@@ -50,6 +50,13 @@
       "when": 1795182633798,
       "tag": "0006_bouncy_giant_man",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795187152705,
+      "tag": "0007_gifted_silver_sable",
+      "breakpoints": true
     }
   ]
 }

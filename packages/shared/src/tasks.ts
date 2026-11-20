@@ -139,6 +139,16 @@ export const taskSchema = z.object({
       helperLocation: z.object({ lat: z.number(), lng: z.number() }).nullable(),
       /** The rating the customer gave the helper, once they have. */
       myRating: z.number().int().nullable(),
+      /** Whether the customer can report a problem now: within the dispute window after the job. */
+      canDispute: z.boolean(),
+      dispute: z
+        .object({
+          status: z.enum(['open', 'resolved']),
+          raisedByMe: z.boolean(),
+          resolution: z.enum(['release', 'refund']).nullable(),
+          resolutionNote: z.string().nullable(),
+        })
+        .nullable(),
     })
     .nullable(),
   createdAt: z.string(),

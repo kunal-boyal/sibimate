@@ -36,11 +36,27 @@
         }
       ],
       "expo-secure-store",
-      ["expo-audio", { "microphonePermission": "Sibimate uses the microphone so you can describe a task by speaking." }]
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Sibimate uses the microphone so you can describe a task by speaking."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "31a40b5f-dcef-40f6-9b36-69a0d0afbb08"
+      }
+    },
+    "owner": "kunalboyal"
   }
 }

@@ -12,7 +12,9 @@ import { HealthController } from './health/health.controller.js';
 import { InterpretationModule } from './interpretation/interpretation.module.js';
 import { MatchingQueueModule } from './matching/matching-queue.module.js';
 import { MatchingModule } from './matching/matching.module.js';
+import { DisputesModule } from './disputes/disputes.module.js';
 import { OnboardingModule } from './onboarding/onboarding.module.js';
+import { SettingsModule } from './settings/settings.module.js';
 import { ReviewsController, ReviewsService } from './reviews/reviews.controller.js';
 import { TasksModule } from './tasks/tasks.module.js';
 import { UsersModule } from './users/users.module.js';
@@ -20,6 +22,7 @@ import { UsersModule } from './users/users.module.js';
 @Module({
   imports: [
     EnvModule,
+    SettingsModule,
     MatchingQueueModule.register(),
     DrizzleModule.forRootAsync({
       inject: [ENV],
@@ -62,6 +65,7 @@ import { UsersModule } from './users/users.module.js';
     AdminModule,
     MatchingModule,
     OnboardingModule,
+    DisputesModule,
   ],
   controllers: [HealthController, ReviewsController],
   providers: [ReviewsService],

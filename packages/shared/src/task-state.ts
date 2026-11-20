@@ -51,6 +51,8 @@ export const TASK_TRANSITIONS: readonly TaskTransition[] = [
   { from: 'assigned', to: 'matching', actors: ['helper'] },
   { from: 'en_route', to: 'matching', actors: ['helper'] },
   ...CANCELLABLE.map((from) => ({ from, to: 'cancelled', actors: ['customer'] }) as const),
+  // A customer who will not give the completion code: the helper asks an admin to step in.
+  { from: 'in_progress', to: 'disputed', actors: ['helper'] },
   { from: 'completed', to: 'disputed', actors: ['customer', 'helper'] },
   { from: 'paid', to: 'disputed', actors: ['customer', 'helper'] },
   // An admin resolves the dispute with a refund or a release.

@@ -5,7 +5,9 @@ import { io } from 'socket.io-client';
 import { API_ORIGIN, api, session, setOnSignedOut } from './api';
 import { Bookings } from './pages/Bookings';
 import { Helpers } from './pages/Helpers';
+import { Disputes } from './pages/Disputes';
 import { Login } from './pages/Login';
+import { Overview } from './pages/Overview';
 import { Settings } from './pages/Settings';
 
 /** The Sibimate mark, drawn for dark grounds. */
@@ -42,6 +44,8 @@ export function App() {
       });
     }
     socket.on('task.changed', () => {
+      void queryClient.invalidateQueries({ queryKey: ['overview'] });
+      void queryClient.invalidateQueries({ queryKey: ['disputes'] });
       void queryClient.invalidateQueries({ queryKey: ['tasks'] });
       void queryClient.invalidateQueries({ queryKey: ['helpers'] });
     });
@@ -72,8 +76,10 @@ export function App() {
         </div>
         <nav className="nav" aria-label="Admin">
           <NavLink to="/" end>
-            Bookings
+            Overview
           </NavLink>
+          <NavLink to="/bookings">Bookings</NavLink>
+          <NavLink to="/disputes">Disputes</NavLink>
           <NavLink to="/helpers">Helpers</NavLink>
           <NavLink to="/settings">Settings</NavLink>
         </nav>
@@ -90,7 +96,9 @@ export function App() {
       </aside>
       <main className="main">
         <Routes>
-          <Route path="/" element={<Bookings />} />
+          <Route path="/" element={<Overview />} />
+          <Route path="/bookings" element={<Bookings />} />
+          <Route path="/disputes" element={<Disputes />} />
           <Route path="/helpers" element={<Helpers />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />

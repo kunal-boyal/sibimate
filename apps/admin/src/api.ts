@@ -5,6 +5,11 @@ import {
   type CreateHelper,
   type ErrorCode,
   type Helper,
+  type AdminDispute,
+  type AdminOverview,
+  type DisputeResolution,
+  adminDisputeListSchema,
+  adminOverviewSchema,
   type HelperApplicationDetail,
   type PlatformSettingsResponse,
   type UpdatePlatformSettings,
@@ -89,6 +94,11 @@ export const api = {
   assign: (taskId: string, helperId: string) =>
     request(`/admin/tasks/${taskId}/assign`, { method: 'POST', body: { helperId } }),
   helpers: (): Promise<HelperList> => request('/admin/helpers', { schema: helperListSchema }),
+  overview: (): Promise<AdminOverview> => request('/admin/overview', { schema: adminOverviewSchema }),
+  disputes: (status: 'open' | 'resolved'): Promise<{ items: AdminDispute[] }> =>
+    request(`/admin/disputes?status=${status}`, { schema: adminDisputeListSchema }),
+  resolveDispute: (id: string, resolution: DisputeResolution, note: string) =>
+    request(`/admin/disputes/${id}/resolve`, { method: 'POST', body: { resolution, note } }),
   settings: (): Promise<PlatformSettingsResponse> =>
     request('/admin/settings', { schema: platformSettingsResponseSchema }),
   updateSettings: (changes: UpdatePlatformSettings): Promise<PlatformSettingsResponse> =>

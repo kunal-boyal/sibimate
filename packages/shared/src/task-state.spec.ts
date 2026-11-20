@@ -57,6 +57,11 @@ describe('task state machine', () => {
     }
   });
 
+  it('lets a helper ask for help when the work is under way, and nobody else', () => {
+    expect(canTransitionTask('in_progress', 'disputed', 'helper')).toBe(true);
+    expect(canTransitionTask('in_progress', 'disputed', 'customer')).toBe(false);
+  });
+
   it('lists each move once', () => {
     const keys = TASK_TRANSITIONS.map((t) => `${t.from}>${t.to}`);
     expect(new Set(keys).size).toBe(keys.length);

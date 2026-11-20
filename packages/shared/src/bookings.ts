@@ -142,6 +142,19 @@ export const helperBookingSchema = z.object({
   address: z.string().nullable(),
   /** The rating this helper gave the customer, once they have. */
   myRating: z.number().int().nullable(),
+  /**
+   * Whether the helper can ask an admin to step in now: the customer has not given
+   * the completion code within the wait, or within the dispute window after the job.
+   */
+  canDispute: z.boolean(),
+  dispute: z
+    .object({
+      status: z.enum(['open', 'resolved']),
+      raisedByMe: z.boolean(),
+      resolution: z.enum(['release', 'refund']).nullable(),
+      resolutionNote: z.string().nullable(),
+    })
+    .nullable(),
   createdAt: z.string(),
 });
 export type HelperBooking = z.infer<typeof helperBookingSchema>;

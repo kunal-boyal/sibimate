@@ -8,12 +8,15 @@ import { AddressCipher } from '../common/address-cipher.js';
 import { ApiException } from '../common/api-exception.js';
 import { bookingCode } from '../common/booking-code.js';
 import { ENV, type Env } from '../config/env.js';
+import { canRaiseDispute, disputeView } from '../disputes/dispute-rules.js';
+import { SettingsService } from '../settings/settings.service.js';
 import type { Database } from '../db/db.js';
 import {
   type TaskCategoryRow,
   type TaskRow,
   type UserRow,
   bookings,
+  disputes,
   helperAvailability,
   helperProfiles,
   taskCategories,
@@ -35,6 +38,7 @@ export class TasksService {
     private readonly interpretations: InterpretationService,
     private readonly taskState: TaskStateService,
     @Inject(ENV) private readonly env: Env,
+    private readonly settings: SettingsService,
   ) {}
 
   async create(customer: UserRow, input: CreateTaskInput, idempotencyKey: string): Promise<Task> {
@@ -250,7 +254,20 @@ export class TasksService {
           ne(bookings.status, 'cancelled'),
         ),
       );
+    const rules = await this.settings.current();
+    const disputeRows = rows.length
+      ? await this.db
+          .select()
+          .from(disputes)
+          .where(
+            inArray(
+              disputes.bookingId,
+              rows.map((row) => row.booking.id),
+            ),
+          )
+      : [];
     for (const { booking, skillTag, name, phone, lat, lng, myRating } of rows) {
+      const dispute = disputeRows.find((row) => row.bookingId === booking.id) ?? null;
       const status = list.find((task) => task.id === booking.taskId)!.status;
       const code = (purpose: 'start' | 'completion') => bookingCode(this.env.OTP_SECRET, booking.id, purpose);
       found.set(booking.taskId, {
@@ -261,6 +278,8 @@ export class TasksService {
         completionCode: status === 'in_progress' ? code('completion') : null,
         // The helper's position is shared only while they are travelling to the customer.
         myRating,
+        canDispute: canRaiseDispute('customer', status, booking, rules, !!dispute),
+        dispute: disputeView(dispute, list[0]!.customerId),
         helperLocation: status === 'en_route' && lat !== null && lng !== null ? { lat, lng } : null,
       });
     }

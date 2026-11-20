@@ -3,6 +3,8 @@
 import {
   ADMIN_ROLES,
   BOOKING_STATUSES,
+  DISPUTE_RESOLUTIONS,
+  DISPUTE_STATUSES,
   DOCUMENT_KINDS,
   DOCUMENT_REVIEW_STATUSES,
   HELPER_RADIUS_DEFAULT_M,
@@ -446,3 +448,32 @@ export const platformSettings = pgTable('platform_settings', {
   updatedBy: uuid('updated_by').references(() => adminUsers.id),
   updatedAt: at('updated_at').notNull().defaultNow(),
 });
+
+export const disputeStatusEnum = pgEnum('dispute_status', DISPUTE_STATUSES);
+export const disputeResolutionEnum = pgEnum('dispute_resolution', DISPUTE_RESOLUTIONS);
+
+/** A problem with a job, raised by either side and decided by an admin. */
+export const disputes = pgTable(
+  'disputes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    bookingId: uuid('booking_id')
+      .notNull()
+      .references(() => bookings.id, { onDelete: 'cascade' }),
+    raisedBy: uuid('raised_by')
+      .notNull()
+      .references(() => users.id),
+    raisedByRole: taskActorEnum('raised_by_role').notNull(),
+    reason: text('reason').notNull(),
+    /** The task's status before it became disputed. */
+    previousStatus: taskStatusEnum('previous_status').notNull(),
+    status: disputeStatusEnum('status').notNull().default('open'),
+    resolution: disputeResolutionEnum('resolution'),
+    resolutionNote: text('resolution_note'),
+    resolvedBy: uuid('resolved_by').references(() => adminUsers.id),
+    resolvedAt: at('resolved_at'),
+    ...timestamps,
+  },
+  // One dispute per job.
+  (table) => [uniqueIndex('disputes_booking_idx').on(table.bookingId)],
+);

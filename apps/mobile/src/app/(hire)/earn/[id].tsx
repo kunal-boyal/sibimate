@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Linking, View } from 'react-native';
 import { Button } from '@/components/Button';
+import { DisputeSection } from '@/components/DisputeSection';
 import { Notice } from '@/components/Notice';
 import { RatingPrompt } from '@/components/RatingPrompt';
 import { Screen } from '@/components/Screen';
@@ -159,6 +160,13 @@ export default function Job() {
       {job.helpersNeeded > 1 && job.status !== 'paid' ? (
         <Notice variant="accent">{t('earn.team', { count: job.helpersNeeded })}</Notice>
       ) : null}
+      <DisputeSection
+        bookingId={job.id}
+        canDispute={job.canDispute}
+        dispute={job.dispute}
+        openLabel={job.status === 'in_progress' ? 'dispute.noCode' : 'dispute.report'}
+        theme="dark"
+      />
       {job.status === 'paid' && job.myRating === null ? (
         <RatingPrompt bookingId={job.id} question={t('rating.askCustomer')} />
       ) : null}

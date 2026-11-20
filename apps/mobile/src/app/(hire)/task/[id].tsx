@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Linking, View } from 'react-native';
 import { CodeCard } from '@/components/CodeCard';
+import { DisputeSection } from '@/components/DisputeSection';
 import { RatingPrompt } from '@/components/RatingPrompt';
 import { TrackingMap } from '@/components/TrackingMap';
 import { distanceBetween, formatDistance } from '@/lib/location';
@@ -217,6 +218,15 @@ export default function TaskScreen() {
             })}
           </Text>
         </>
+      ) : null}
+
+      {booking ? (
+        <DisputeSection
+          bookingId={booking.id}
+          canDispute={booking.canDispute}
+          dispute={booking.dispute}
+          openLabel="dispute.report"
+        />
       ) : null}
 
       {booking && task.status === 'paid' && booking.myRating === null ? (

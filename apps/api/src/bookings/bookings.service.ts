@@ -1,6 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectDrizzle } from '@nestjs/drizzle';
-import { type AdminTask, type AdminListTasksQuery, type HelperBooking, type TaskStatus } from '@sibimate/shared';
+import {
+  type AdminTask,
+  type AdminListTasksQuery,
+  type HelperBooking,
+  type PlatformSettings,
+  type TaskStatus,
+} from '@sibimate/shared';
 import { and, desc, eq, inArray, ne, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { AddressCipher } from '../common/address-cipher.js';
@@ -12,6 +18,7 @@ import {
   type BookingRow,
   type HelperProfileRow,
   bookings,
+  disputes,
   helperProfiles,
   taskCategories,
   taskOffers,
@@ -19,6 +26,8 @@ import {
   users,
 } from '../db/schema.js';
 import { TaskStateService } from '../tasks/task-state.service.js';
+import { canRaiseDispute, disputeView } from '../disputes/dispute-rules.js';
+import { SettingsService } from '../settings/settings.service.js';
 import { confirmHelper, helperUnavailable, isUniqueViolation } from './confirm-helper.js';
 
 export const CODE_RULES = { maxAttempts: 5, lockMinutes: 10 } as const;
@@ -37,6 +46,7 @@ export class BookingsService {
     @Inject(ENV) private readonly env: Env,
     private readonly addressCipher: AddressCipher,
     private readonly taskState: TaskStateService,
+    private readonly settings: SettingsService,
   ) {}
 
   // Admin
@@ -113,7 +123,8 @@ export class BookingsService {
       // Jobs under way first, then the most recent.
       .orderBy(sql`${bookings.status} = 'active' desc`, desc(bookings.createdAt))
       .limit(30);
-    return rows.map((row) => this.toHelperBooking(row));
+    const rules = await this.settings.current();
+    return rows.map((row) => this.toHelperBooking(row, rules, helper.userId));
   }
 
   async getForHelper(helper: HelperProfileRow, bookingId: string): Promise<HelperBooking> {
@@ -121,7 +132,7 @@ export class BookingsService {
     if (!row) {
       throw notFound();
     }
-    return this.toHelperBooking(row);
+    return this.toHelperBooking(row, await this.settings.current(), helper.userId);
   }
 
   async enRoute(helper: HelperProfileRow, bookingId: string): Promise<HelperBooking> {
@@ -244,22 +255,29 @@ export class BookingsService {
         myRating: sql<
           number | null
         >`(select r.rating from reviews r where r.booking_id = ${bookings.id} and r.author_id = (select hp.user_id from helper_profiles hp where hp.id = ${bookings.helperId}))`,
+        dispute: disputes,
       })
       .from(bookings)
       .innerJoin(tasks, eq(bookings.taskId, tasks.id))
+      .leftJoin(disputes, eq(disputes.bookingId, bookings.id))
       .innerJoin(users, eq(tasks.customerId, users.id))
       .leftJoin(taskCategories, eq(tasks.categoryId, taskCategories.id))
       .where(where)
       .$dynamic();
   }
 
-  private toHelperBooking({
-    booking,
-    task,
-    category,
-    customer,
-    myRating,
-  }: Awaited<ReturnType<BookingsService['helperQuery']>>[number]): HelperBooking {
+  private toHelperBooking(
+    {
+      booking,
+      task,
+      category,
+      customer,
+      myRating,
+      dispute,
+    }: Awaited<ReturnType<BookingsService['helperQuery']>>[number],
+    rules: PlatformSettings,
+    viewerId: string,
+  ): HelperBooking {
     // A job this helper gave up or lost shows as cancelled, whatever the task went on to do.
     const status = booking.status === 'cancelled' ? 'cancelled' : task.status;
     const current = booking.status === 'active';
@@ -279,6 +297,8 @@ export class BookingsService {
       customer: current ? customer : { name: customer.name, phone: '' },
       address: current && ADDRESS_VISIBLE.includes(task.status) ? this.addressCipher.decrypt(task.addressEnc) : null,
       myRating,
+      canDispute: booking.status === 'cancelled' ? false : canRaiseDispute('helper', status, booking, rules, !!dispute),
+      dispute: disputeView(dispute, viewerId),
       createdAt: booking.createdAt.toISOString(),
     };
   }

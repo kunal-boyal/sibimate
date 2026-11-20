@@ -1,0 +1,28 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "device": {
+      "node": "24.16.0",
+      "pnpm": "12.9.1",
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "SIBIMATE_LOCAL_DEVICE": "1",
+        "EXPO_PUBLIC_API_URL": "http://localhost:3000/v1",
+        "EXPO_PUBLIC_DEV_LOCATION": "26.8505,75.7628"
+      }
+    },
+    "production": {
+      "node": "24.16.0",
+      "pnpm": "12.9.1",
+      "android": {
+        "buildType": "app-bundle"
+      }
+    }
+  }
+}
