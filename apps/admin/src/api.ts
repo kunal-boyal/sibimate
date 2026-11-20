@@ -6,6 +6,8 @@ import {
   type ErrorCode,
   type Helper,
   type AdminCategory,
+  type AuditEntry,
+  auditListSchema,
   type AdminDispute,
   type ApproveCategory,
   adminCategoryListSchema,
@@ -103,6 +105,7 @@ export const api = {
     request(`/admin/categories/${id}/approve`, { method: 'POST', body: changes }),
   mergeCategory: (id: string, intoId: string) =>
     request(`/admin/categories/${id}/merge`, { method: 'POST', body: { intoId } }),
+  audit: (): Promise<{ items: AuditEntry[] }> => request('/admin/audit', { schema: auditListSchema }),
   overview: (): Promise<AdminOverview> => request('/admin/overview', { schema: adminOverviewSchema }),
   disputes: (status: 'open' | 'resolved'): Promise<{ items: AdminDispute[] }> =>
     request(`/admin/disputes?status=${status}`, { schema: adminDisputeListSchema }),

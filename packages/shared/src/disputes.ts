@@ -73,3 +73,17 @@ export const adminOverviewSchema = z.object({
   postedByDay: z.array(z.object({ day: z.string(), count: z.number().int() })),
 });
 export type AdminOverview = z.infer<typeof adminOverviewSchema>;
+
+// Audit log
+
+export const auditEntrySchema = z.object({
+  id: z.uuid(),
+  at: z.string(),
+  admin: z.string(),
+  action: z.string(),
+  entity: z.string(),
+  entityId: z.string(),
+  meta: z.record(z.string(), z.unknown()).nullable(),
+});
+export type AuditEntry = z.infer<typeof auditEntrySchema>;
+export const auditListSchema = z.object({ items: z.array(auditEntrySchema) });

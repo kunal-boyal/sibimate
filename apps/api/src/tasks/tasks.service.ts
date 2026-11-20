@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectDrizzle } from '@nestjs/drizzle';
-import { ACTIVE_TASK_STATUSES, type ListTasksQuery, type Task, type TaskList } from '@sibimate/shared';
+import { ACTIVE_TASK_STATUSES, type ListTasksQuery, type Task, type TaskList, SCHEDULE_LEAD_MINUTES, SCHEDULE_MAX_DAYS } from '@sibimate/shared';
 import { and, desc, eq, inArray, lt, ne, or, sql } from 'drizzle-orm';
 import type { z } from 'zod';
 import type { createTaskSchema } from '@sibimate/shared';
@@ -10,6 +10,8 @@ import { bookingCode } from '../common/booking-code.js';
 import { ENV, type Env } from '../config/env.js';
 import { canRaiseDispute, disputeView } from '../disputes/dispute-rules.js';
 import { SettingsService } from '../settings/settings.service.js';
+import { MatchingScheduler } from '../matching/matching-scheduler.js';
+import { START_RING } from '../matching/matching.service.js';
 import type { Database } from '../db/db.js';
 import {
   type TaskCategoryRow,
@@ -39,6 +41,7 @@ export class TasksService {
     private readonly taskState: TaskStateService,
     @Inject(ENV) private readonly env: Env,
     private readonly settings: SettingsService,
+    private readonly scheduler: MatchingScheduler,
   ) {}
 
   async create(customer: UserRow, input: CreateTaskInput, idempotencyKey: string): Promise<Task> {
@@ -48,6 +51,9 @@ export class TasksService {
     const scheduleAt = input.scheduleAt ? new Date(input.scheduleAt) : null;
     if (scheduleAt && scheduleAt.getTime() <= Date.now()) {
       throw invalid('scheduleAt', 'Pick a time in the future.');
+    }
+    if (scheduleAt && scheduleAt.getTime() > Date.now() + SCHEDULE_MAX_DAYS * 86_400_000) {
+      throw invalid('scheduleAt', `Pick a time within the next ${SCHEDULE_MAX_DAYS} days.`);
     }
 
     const interpretation = input.interpretationId
@@ -131,8 +137,13 @@ export class TasksService {
       return this.get(customer, existing!.id);
     }
 
-    // Matching starts at once. Until the matching engine exists, an admin assigns the helper from here.
-    await this.taskState.transition(created.id, 'matching', { role: 'system' });
+    // A task for now looks for a helper at once; a later one starts ahead of its time.
+    const startInMs = scheduleAt ? scheduleAt.getTime() - SCHEDULE_LEAD_MINUTES * 60_000 - Date.now() : 0;
+    if (startInMs > 0) {
+      await this.scheduler.schedule(created.id, START_RING, startInMs);
+    } else {
+      await this.taskState.transition(created.id, 'matching', { role: 'system' });
+    }
     return this.get(customer, created.id);
   }
 
@@ -307,6 +318,7 @@ export class TasksService {
       paymentMethod: task.paymentMethod,
       scheduleAt: task.scheduleAt?.toISOString() ?? null,
       status: task.status,
+      searchRadiusM: task.searchRadiusM,
       address: this.addressCipher.decrypt(task.addressEnc),
       pickup,
       booking: booking ?? null,

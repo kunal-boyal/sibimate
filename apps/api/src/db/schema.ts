@@ -194,6 +194,9 @@ export const tasks = pgTable(
     /** Paise. */
     customerPrice: integer('customer_price').notNull(),
     searchRadiusM: integer('search_radius_m').notNull().default(2000),
+    /** A search area the customer chose. Automatic widening never goes past one they reduced. */
+    customerRadiusM: integer('customer_radius_m'),
+    customerRadiusCap: boolean('customer_radius_cap').notNull().default(false),
     helpersNeeded: integer('helpers_needed').notNull().default(1),
     paymentMethod: paymentMethodEnum('payment_method').notNull(),
     status: taskStatusEnum('status').notNull(),

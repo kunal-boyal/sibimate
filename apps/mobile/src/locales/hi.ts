@@ -264,5 +264,18 @@ export const hi: Record<TranslationKey, string> = {
   'privacy.rights.body':
     'आप अपना नाम और भाषा देख और बदल सकते हैं, और कभी भी अकाउंट पेज से अपना अकाउंट हटा सकते हैं। किसी और बात के लिए sibimate.in पर Sibimate से संपर्क करें।',
   'privacy.version': '{version} का संस्करण। वकील की समीक्षा तक यह नोटिस ड्राफ़्ट है।',
+  'when.label': 'कब',
+  'when.now': 'अभी',
+  'when.later': 'बाद में',
+  'when.today': 'आज',
+  'when.tomorrow': 'कल',
+  'when.note': 'हम लगभग दो घंटे पहले हेल्पर ढूँढना शुरू करेंगे।',
+  'when.missing': 'दिन और समय चुनें।',
+  'when.scheduledNote': '{time} के लिए बुक है। हम लगभग दो घंटे पहले हेल्पर ढूँढना शुरू करेंगे।',
+  'area.label': 'इतनी दूरी तक ढूँढ रहे हैं',
+  'area.smaller': 'कम दूरी तक ढूँढें',
+  'area.larger': 'ज़्यादा दूरी तक ढूँढें',
+  'earn.at': '{time} पर',
+  'earn.now': 'अभी चाहिए',
   'errors.network': 'कनेक्शन नहीं है। इंटरनेट जाँचकर दोबारा कोशिश करें।',
 };

@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { Button } from '@/components/Button';
 import { ChoiceTiles } from '@/components/ChoiceTiles';
+import { type When, WhenPicker, scheduleAtOf } from '@/components/WhenPicker';
 import { Notice } from '@/components/Notice';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
@@ -26,6 +27,7 @@ export default function ConfirmTask() {
   const clearDraft = useDraft((state) => state.clear);
 
   const [kind, setKind] = useState<'unskilled' | 'skilled'>('unskilled');
+  const [when, setWhen] = useState<When>({ later: false, day: null, slot: null });
   const [address, setAddress] = useState('');
   const [rupees, setRupees] = useState('');
   const [point, setPoint] = useState<GeoPoint | null | 'loading'>('loading');
@@ -67,6 +69,10 @@ export default function ConfirmTask() {
       setError('confirm.budgetMissing');
       return;
     }
+    if (when.later && !scheduleAtOf(when)) {
+      setError('when.missing');
+      return;
+    }
     if (!point || point === 'loading') {
       setError('confirm.locationFailed');
       return;
@@ -85,6 +91,7 @@ export default function ConfirmTask() {
           pickup: point,
           address: address.trim(),
           paymentMethod: 'cash',
+          scheduleAt: scheduleAtOf(when),
         },
         idempotencyKey.current,
       );
@@ -180,6 +187,8 @@ export default function ConfirmTask() {
       )}
 
       {interpretation?.followUpQuestion ? <Notice variant="accent">{interpretation.followUpQuestion}</Notice> : null}
+
+      <WhenPicker value={when} onChange={setWhen} />
 
       <TextField
         label={t('confirm.address')}

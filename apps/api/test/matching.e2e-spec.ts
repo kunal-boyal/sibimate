@@ -425,4 +425,96 @@ describe('Matching and offers (e2e)', () => {
       await as(steady.token).post(`/helper/tasks/${taskId}/accept`).expect(200);
     });
   });
+
+  describe('scheduled tasks', () => {
+    it('waits for a later task, and starts looking ahead of its time', async () => {
+      const helper = await helperAt(1, 'Aman');
+      const later = new Date(Date.now() + 26 * 3_600_000).toISOString();
+      const taskId = await postTask({ scheduleAt: later });
+      expect(await task(taskId)).toMatchObject({ status: 'posted', scheduleAt: later });
+      // One job, two hours before the time.
+      expect(scheduler.jobs).toHaveLength(1);
+      expect(scheduler.jobs[0]).toMatchObject({ taskId, ring: -1 });
+      expect(scheduler.jobs[0]!.delayMs).toBeGreaterThan(23.9 * 3_600_000);
+      expect(scheduler.jobs[0]!.delayMs).toBeLessThan(24.1 * 3_600_000);
+
+      expect(await matching.runRing(taskId, -1)).toEqual({ notified: 0 });
+      expect((await task(taskId)).status).toBe('matching');
+      expect(scheduler.jobs.at(-1)).toEqual({ taskId, ring: 0, delayMs: 0 });
+      await matching.runRing(taskId, 0);
+      expect((await nearby(helper.token))[0].scheduleAt).toBe(later);
+      // Running the start again does nothing.
+      expect(await matching.runRing(taskId, -1)).toBe('stopped');
+    });
+
+    it('looks at once for a task within two hours, and refuses times too far ahead', async () => {
+      const soon = await postTask({ scheduleAt: new Date(Date.now() + 90 * 60_000).toISOString() });
+      expect((await task(soon)).status).toBe('matching');
+      const tooFar = await as(customer)
+        .post('/tasks', {
+          title: 'Carry two suitcases',
+          description: 'Carry two suitcases from the station.',
+          requiresSkilled: false,
+          customerPrice: 15000,
+          pickup: HOME,
+          address: '14 Shanti Path',
+          paymentMethod: 'cash',
+          scheduleAt: new Date(Date.now() + 15 * 86_400_000).toISOString(),
+        })
+        .set('Idempotency-Key', randomUUID())
+        .expect(400);
+      expect(tooFar.body.details[0].path).toBe('scheduleAt');
+    });
+
+    it('lets the customer cancel a scheduled task before it starts looking', async () => {
+      const taskId = await postTask({ scheduleAt: new Date(Date.now() + 26 * 3_600_000).toISOString() });
+      await as(customer).post(`/tasks/${taskId}/cancel`).expect(200);
+      expect(await matching.runRing(taskId, -1)).toBe('stopped');
+    });
+  });
+
+  describe('search area', () => {
+    it('widens at once when the customer asks, and keeps widening on its own', async () => {
+      await helperAt(1, 'Near');
+      const mid = await helperAt(4, 'Mid');
+      const taskId = await postTask();
+      expect(await matching.runRing(taskId, 0)).toEqual({ notified: 1 });
+      expect((await task(taskId)).searchRadiusM).toBe(2000);
+
+      await as(customer).post(`/tasks/${taskId}/search-area`, { radiusM: 5000 }).expect(204);
+      expect((await task(taskId)).searchRadiusM).toBe(5000);
+      expect(await nearby(mid.token)).toHaveLength(1);
+      // The last ring still reaches 8 km.
+      await matching.runRing(taskId, 2);
+      expect((await task(taskId)).searchRadiusM).toBe(8000);
+    });
+
+    it('never widens past an area the customer reduced', async () => {
+      const taskId = await postTask();
+      await matching.runRing(taskId, 0);
+      await matching.runRing(taskId, 1);
+      await as(customer).post(`/tasks/${taskId}/search-area`, { radiusM: 3000 }).expect(204);
+      const far = await helperAt(6, 'Far');
+      await as(far.token).put('/helper/availability', { isOnline: true, radiusM: 10000 }).expect(200);
+      expect(await matching.runRing(taskId, 2)).toEqual({ notified: 0 });
+      expect((await task(taskId)).searchRadiusM).toBe(3000);
+    });
+
+    it('accepts only the offered distances, from the task’s customer, while it is looking', async () => {
+      const taskId = await postTask();
+      await as(customer).post(`/tasks/${taskId}/search-area`, { radiusM: 4321 }).expect(400);
+      const stranger = await signIn('+919811111111');
+      await as(stranger).post(`/tasks/${taskId}/search-area`, { radiusM: 5000 }).expect(404);
+      await as(customer).post(`/tasks/${taskId}/cancel`).expect(200);
+      await as(customer).post(`/tasks/${taskId}/search-area`, { radiusM: 5000 }).expect(409);
+    });
+  });
+
+  it('shows the audit log to owners only', async () => {
+    const helper = await helperAt(1, 'Aman');
+    expect(helper.id).toBeDefined();
+    const entries = (await as(admin).get('/admin/audit').expect(200)).body.items;
+    expect(entries[0]).toMatchObject({ admin: 'ops@sibimate.test', action: 'helper.create', entity: 'helper' });
+    await as(customer).get('/admin/audit').expect(401);
+  });
 });

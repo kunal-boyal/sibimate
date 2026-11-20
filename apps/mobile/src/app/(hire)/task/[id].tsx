@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Linking, View } from 'react-native';
 import { CodeCard } from '@/components/CodeCard';
+import { SearchArea } from '@/components/SearchArea';
 import { DisputeSection } from '@/components/DisputeSection';
 import { RatingPrompt } from '@/components/RatingPrompt';
 import { TrackingMap } from '@/components/TrackingMap';
@@ -15,7 +16,7 @@ import { Screen } from '@/components/Screen';
 import { StatusPill } from '@/components/StatusPill';
 import { Text } from '@/components/Text';
 import { errorKey, formatPhone, useT } from '@/lib/i18n';
-import { api } from '@/lib/session';
+import { api, useSession } from '@/lib/session';
 
 const NOTED = ['matching', 'assigned', 'en_route', 'paid', 'cancelled', 'expired'] as const;
 
@@ -23,6 +24,7 @@ export default function TaskScreen() {
   const t = useT();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const language = useSession((state) => state.language);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [confirming, setConfirming] = useState(false);
 
@@ -125,6 +127,20 @@ export default function TaskScreen() {
     >
       <StatusPill status={task.status} />
       {note ? <Notice variant="accent">{t(`statusNote.${note}`)}</Notice> : null}
+      {task.status === 'posted' && task.scheduleAt ? (
+        <Notice variant="accent">
+          {t('when.scheduledNote', {
+            time: new Date(task.scheduleAt).toLocaleString(language === 'hi' ? 'hi-IN' : 'en-IN', {
+              weekday: 'short',
+              day: 'numeric',
+              month: 'short',
+              hour: 'numeric',
+              minute: '2-digit',
+            }),
+          })}
+        </Notice>
+      ) : null}
+      {task.status === 'matching' ? <SearchArea taskId={task.id} radiusM={task.searchRadiusM} /> : null}
 
       {task.status === 'expired' ? (
         <Button label={t('task.postAgain')} loading={retry.isPending} onPress={() => retry.mutate()} />

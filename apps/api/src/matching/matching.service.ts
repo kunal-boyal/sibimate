@@ -5,11 +5,25 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { Database } from '../db/db.js';
 import { taskOffers, tasks } from '../db/schema.js';
 import { Notifier } from '../live/notifier.js';
+import { ApiException } from '../common/api-exception.js';
 import { TaskStateService } from '../tasks/task-state.service.js';
 import { MatchingScheduler } from './matching-scheduler.js';
 
 /** A task with offers waiting for the customer is given this long before it expires anyway. */
 const QUOTES_GRACE_MS = 60 * 60 * 1000;
+
+/** The "ring" that starts a scheduled task looking for a helper, ahead of its time. */
+export const START_RING = -1;
+/** The ring number recorded on offers found when the customer changed the search area. */
+const CUSTOMER_RING = -2;
+
+/** A ring's radius, after the customer's own choice: a reduced area caps it, a larger one sets its least. */
+function effectiveRadius(ringRadiusM: number, task: { customerRadiusM: number | null; customerRadiusCap: boolean }) {
+  if (task.customerRadiusM === null) {
+    return ringRadiusM;
+  }
+  return task.customerRadiusCap ? Math.min(ringRadiusM, task.customerRadiusM) : Math.max(ringRadiusM, task.customerRadiusM);
+}
 
 export type RingOutcome = 'stopped' | 'expired' | 'waiting-for-customer' | { notified: number };
 
@@ -30,6 +44,9 @@ export class MatchingService {
   ) {}
 
   async runRing(taskId: string, ring: number): Promise<RingOutcome> {
+    if (ring === START_RING) {
+      return this.startScheduled(taskId);
+    }
     const [task] = await this.db.select().from(tasks).where(eq(tasks.id, taskId));
     if (!task || task.status !== 'matching') {
       return 'stopped';
@@ -40,6 +57,51 @@ export class MatchingService {
       return this.finish(taskId, ring, task.createdAt);
     }
 
+    const radiusM = effectiveRadius(step.radiusM, task);
+    const notified = await this.notify(taskId, ring, radiusM);
+    await this.db.update(tasks).set({ searchRadiusM: radiusM }).where(eq(tasks.id, taskId));
+    await this.scheduler.schedule(taskId, ring + 1, step.waitSeconds * 1000);
+    this.logger.log(`Task ${taskId}: ring ${ring} (${radiusM} m) notified ${notified} helper(s)`);
+    return { notified };
+  }
+
+  /**
+   * The customer chose a search area. It replaces the current ring at once: helpers
+   * newly inside it are notified now. A smaller area is also a ceiling for the
+   * automatic widening that follows; a larger one only a floor.
+   */
+  async changeSearchArea(customerId: string, taskId: string, radiusM: number): Promise<void> {
+    const [task] = await this.db
+      .select()
+      .from(tasks)
+      .where(and(eq(tasks.id, taskId), eq(tasks.customerId, customerId)));
+    if (!task) {
+      throw new ApiException(404, 'not_found', 'Task not found.');
+    }
+    if (task.status !== 'matching') {
+      throw new ApiException(409, 'invalid_transition', 'The search area can be changed only while looking for a helper.');
+    }
+    await this.db
+      .update(tasks)
+      .set({ customerRadiusM: radiusM, customerRadiusCap: radiusM < task.searchRadiusM, searchRadiusM: radiusM })
+      .where(eq(tasks.id, taskId));
+    const notified = await this.notify(taskId, CUSTOMER_RING, radiusM);
+    this.logger.log(`Task ${taskId}: customer set the search to ${radiusM} m, notified ${notified} helper(s)`);
+    await this.notifier.taskChanged(taskId);
+  }
+
+  /** A scheduled task's time is near: it starts looking for a helper, which runs the first ring. */
+  private async startScheduled(taskId: string): Promise<RingOutcome> {
+    const [task] = await this.db.select({ status: tasks.status }).from(tasks).where(eq(tasks.id, taskId));
+    if (task?.status !== 'posted') {
+      return 'stopped';
+    }
+    await this.taskState.transition(taskId, 'matching', { role: 'system' });
+    return { notified: 0 };
+  }
+
+  /** Finds, ranks and records the helpers inside `radiusM` who have not seen the task yet, and tells them. */
+  private async notify(taskId: string, ring: number, radiusM: number): Promise<number> {
     // One statement finds, ranks and records the helpers, so two workers on the same ring cannot notify twice.
     const { rows } = await this.db.execute(sql`
       insert into task_offers (task_id, helper_id, ring, distance_m)
@@ -56,8 +118,8 @@ export class MatchingService {
         and hp.verification_level >= coalesce(c.min_verification_level, 'basic')
         and not exists (select 1 from bookings b where b.helper_id = hp.id and b.status = 'active')
         and not exists (select 1 from task_offers o where o.task_id = t.id and o.helper_id = hp.id)
-        -- Inside this ring, and inside the distance the helper is willing to travel.
-        and ST_DWithin(ha.last_location, t.pickup_point, least(${step.radiusM}, ha.radius_m))
+        -- Inside the search area, and inside the distance the helper is willing to travel.
+        and ST_DWithin(ha.last_location, t.pickup_point, least(${radiusM}, ha.radius_m))
       order by
         ST_Distance(ha.last_location, t.pickup_point) / 1000.0
         + 2.0 * hp.cancelled_count / (hp.completed_count + hp.cancelled_count + 1)
@@ -65,15 +127,11 @@ export class MatchingService {
       on conflict do nothing
       returning helper_id
     `);
-    await this.db.update(tasks).set({ searchRadiusM: step.radiusM }).where(eq(tasks.id, taskId));
-    await this.scheduler.schedule(taskId, ring + 1, step.waitSeconds * 1000);
     if (rows.length > 0) {
       // The helpers just found see the task appear.
       await this.notifier.taskChanged(taskId);
     }
-
-    this.logger.log(`Task ${taskId}: ring ${ring} (${step.radiusM} m) notified ${rows.length} helper(s)`);
-    return { notified: rows.length };
+    return rows.length;
   }
 
   /** After the last ring: expire the task, unless helpers have made offers the customer has not chosen from. */

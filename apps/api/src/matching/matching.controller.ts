@@ -6,6 +6,8 @@ import {
   type NearbyTaskList,
   type OfferResult,
   type Quote,
+  type SearchArea,
+  searchAreaSchema,
   type SetAvailability,
   type TaskOfferList,
   helperLocationSchema,
@@ -16,6 +18,7 @@ import { CurrentHelper, HelperGuard } from '../bookings/helper.guard.js';
 import { ApiException } from '../common/api-exception.js';
 import type { HelperProfileRow, UserRow } from '../db/schema.js';
 import { AvailabilityService } from './availability.service.js';
+import { MatchingService } from './matching.service.js';
 import { OffersService } from './offers.service.js';
 
 const Id = (name = 'id') =>
@@ -83,11 +86,25 @@ export class HelperMatchingController {
 /** The customer's side: helpers' offers on their task. */
 @Controller('tasks')
 export class TaskOffersController {
-  constructor(private readonly offers: OffersService) {}
+  constructor(
+    private readonly offers: OffersService,
+    private readonly matching: MatchingService,
+  ) {}
 
   @Get(':id/offers')
   async list(@CurrentUser() user: UserRow, @Id() id: string): Promise<TaskOfferList> {
     return { items: await this.offers.listForCustomer(user, id) };
+  }
+
+  /** The customer widens or narrows the search while their task looks for a helper. */
+  @Post(':id/search-area')
+  @HttpCode(204)
+  async searchArea(
+    @CurrentUser() user: UserRow,
+    @Id() id: string,
+    @Body({ schema: searchAreaSchema }) body: SearchArea,
+  ): Promise<void> {
+    await this.matching.changeSearchArea(user.id, id, body.radiusM);
   }
 
   @Post(':id/offers/:offerId/accept')

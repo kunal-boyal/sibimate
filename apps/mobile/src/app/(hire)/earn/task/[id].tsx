@@ -118,7 +118,17 @@ export default function NearbyTaskScreen() {
       }
     >
       <Text variant="bodySm" color={dark.inkMuted}>
-        {[t('earn.away', { distance: formatDistance(task.distanceM) }), task.category].filter(Boolean).join(' · ')}
+        {[
+          t('earn.away', { distance: formatDistance(task.distanceM) }),
+          task.category,
+          task.scheduleAt
+            ? t('earn.at', {
+                time: new Date(task.scheduleAt).toLocaleString('en-IN', { weekday: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+              })
+            : t('earn.now'),
+        ]
+          .filter(Boolean)
+          .join(' · ')}
       </Text>
 
       {task.helpersNeeded > 1 ? (

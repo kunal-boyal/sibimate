@@ -264,6 +264,19 @@ export const en = {
   'privacy.rights.body':
     'You can see and change your name and language, and delete your account at any time from the Account page. For anything else, contact Sibimate through sibimate.in.',
   'privacy.version': 'Version of {version}. This notice is a draft until it has been reviewed by a lawyer.',
+  'when.label': 'When',
+  'when.now': 'Right now',
+  'when.later': 'Later',
+  'when.today': 'Today',
+  'when.tomorrow': 'Tomorrow',
+  'when.note': 'We start looking for a helper about two hours before.',
+  'when.missing': 'Pick a day and a time.',
+  'when.scheduledNote': 'Booked for {time}. We start looking for a helper about two hours before.',
+  'area.label': 'Searching within',
+  'area.smaller': 'Search a smaller area',
+  'area.larger': 'Search a larger area',
+  'earn.at': 'at {time}',
+  'earn.now': 'needed now',
   'errors.network': 'No connection. Check your internet and try again.',
 } as const;
 

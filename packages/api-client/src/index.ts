@@ -275,6 +275,10 @@ export function createApiClient(options: ApiClientOptions) {
     listTaskOffers: (taskId: string): Promise<TaskOfferList> =>
       request(`/tasks/${taskId}/offers`, { schema: taskOfferListSchema }),
 
+    /** Widens or narrows the search while the task looks for a helper. */
+    setSearchArea: (taskId: string, radiusM: number): Promise<void> =>
+      request(`/tasks/${taskId}/search-area`, { method: 'POST', body: { radiusM } }),
+
     chooseOffer: (taskId: string, offerId: string): Promise<void> =>
       request(`/tasks/${taskId}/offers/${offerId}/accept`, { method: 'POST' }),
 

@@ -126,3 +126,19 @@ export type TaskOfferList = z.infer<typeof taskOfferListSchema>;
 /** Posting an expired task again, optionally at a higher price. */
 export const retryTaskSchema = z.object({ customerPrice: priceSchema.optional() });
 export type RetryTask = z.infer<typeof retryTaskSchema>;
+
+/** A task scheduled for later starts looking for a helper this long before its time. */
+export const SCHEDULE_LEAD_MINUTES = 120;
+/** How far ahead a task can be scheduled. */
+export const SCHEDULE_MAX_DAYS = 14;
+
+/** The search areas a customer can choose while their task looks for a helper. */
+export const SEARCH_AREA_STEPS_M = [1000, 2000, 3000, 5000, 8000, 10_000, 15_000] as const;
+
+export const searchAreaSchema = z.object({
+  radiusM: z
+    .number()
+    .int()
+    .refine((value) => (SEARCH_AREA_STEPS_M as readonly number[]).includes(value), 'Choose one of the offered distances'),
+});
+export type SearchArea = z.infer<typeof searchAreaSchema>;

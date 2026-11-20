@@ -123,6 +123,8 @@ export const taskSchema = z.object({
   paymentMethod: z.enum(PAYMENT_METHODS),
   scheduleAt: z.string().nullable(),
   status: z.enum(TASK_STATUSES),
+  /** How far from the pickup point the search for a helper reaches now, in metres. */
+  searchRadiusM: z.number().int(),
   /** Only ever sent to the customer who posted the task. */
   address: z.string(),
   /** Where the helper should come. */

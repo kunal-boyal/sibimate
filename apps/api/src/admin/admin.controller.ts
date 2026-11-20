@@ -19,6 +19,7 @@ import {
   type ApproveHelper,
   type AssignHelper,
   type AdminCategory,
+  type AuditEntry,
   type AdminDispute,
   type ApproveCategory,
   type MergeCategory,
@@ -159,6 +160,13 @@ export class AdminController {
   ): Promise<void> {
     await this.categories.merge(id, body.intoId);
     await this.audit.record(admin, 'category.merge', 'task_category', id, { intoId: body.intoId });
+  }
+
+  /** What admins did and which documents they opened. Owners only. */
+  @Get('audit')
+  @AdminRoles('owner')
+  async auditLog(): Promise<{ items: AuditEntry[] }> {
+    return { items: await this.audit.recent() };
   }
 
   @Get('settings')
