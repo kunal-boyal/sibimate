@@ -78,6 +78,13 @@
       "when": 1795197360586,
       "tag": "0010_tired_chameleon",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795247143795,
+      "tag": "0011_previous_bug",
+      "breakpoints": true
     }
   ]
 }

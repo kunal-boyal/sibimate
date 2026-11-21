@@ -1,0 +1,1 @@
+DROP INDEX "bookings_one_active_per_helper_idx";

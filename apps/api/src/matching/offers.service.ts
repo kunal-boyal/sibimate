@@ -9,7 +9,7 @@ import {
   commissionFor,
 } from '@sibimate/shared';
 import { and, asc, desc, eq, inArray } from 'drizzle-orm';
-import { confirmHelper, isUniqueViolation } from '../bookings/confirm-helper.js';
+import { confirmHelper } from '../bookings/confirm-helper.js';
 import { ApiException } from '../common/api-exception.js';
 import type { Database } from '../db/db.js';
 import {
@@ -96,8 +96,8 @@ export class OffersService {
       );
       return { outcome: 'assigned', bookingId };
     } catch (error) {
-      if (isUniqueViolation(error)) {
-        throw gone('You already have a job under way.');
+      if (error instanceof ApiException && error.code === 'job_clash') {
+        throw new ApiException(409, 'job_clash', 'You already have a job around that time.');
       }
       // The task's row lock made a second helper wait; by then it was no longer looking for one.
       if (error instanceof ApiException && error.code === 'invalid_transition') {
@@ -183,8 +183,8 @@ export class OffersService {
         },
       );
     } catch (error) {
-      if (isUniqueViolation(error)) {
-        throw gone('This helper has just taken another job. Choose another offer.');
+      if (error instanceof ApiException && error.code === 'job_clash') {
+        throw gone('This helper has just taken another job around that time. Choose another offer.');
       }
       throw error;
     }

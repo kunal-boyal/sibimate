@@ -99,7 +99,7 @@ Each move writes a row to task_events and emits one domain event. Notifications,
 
 Matching is a background job that searches for eligible helpers in widening rings and stops at the first valid claim. The ring sizes and waits below are the starting values from your strategy plan and sit in configuration. There is no service-area boundary: a task posted from any location is matched if eligible helpers fall inside the rings.
 
-1.  Filter for eligibility: the helper is online and active, holds the verification level the category needs, has no other active booking, and has seen the app in the last few minutes. This filter decides who is notified first. A helper who is busy on another booking, or who already has bids open on other tasks, can still bid on any task that is open for bids, and the bid shows when they can arrive.
+1.  Filter for eligibility: the helper is online and active, holds the verification level the category needs, has no other job within three hours of the task's time, and has seen the app in the last few minutes. Helpers with no other job are notified first. A helper busy on one job can still be shown and take a task for later in the day, and can hold several jobs as long as they are three hours apart; a job not yet finished counts as happening at its slot, or now once that has passed. They travel to one job at a time. A helper with bids open on other tasks can still bid on any task that is open for bids.
 
 2.  Search ring one with ST_DWithin at 2 km from the pickup point, also respecting each helper's own radius.
 
@@ -109,7 +109,7 @@ Matching is a background job that searches for eligible helpers in widening ring
 
 5.  Accepting the customer's price: the first helper to accept wins through a single conditional update on the task row, so two helpers can never both be assigned.
 
-6.  Quoting a different price: a helper can instead send their own price, and the customer picks a quote or waits for more. The platform sets no fixed price and no price limits. When a helper is confirmed on one task, their open bids for the same time are withdrawn automatically. Skilled jobs are open to every eligible helper, and an acceptance there counts as a quote at the customer's price, so the customer always chooses; each quote shows whether the helper carries the skilled tag, and the customer chooses.
+6.  Quoting a different price: a helper can instead send their own price, and the customer picks a quote or waits for more. The platform sets no fixed price and no price limits. When a helper is confirmed on one task, their open bids within three hours of it are withdrawn automatically; bids for other times stay open. Skilled jobs are open to every eligible helper, and an acceptance there counts as a quote at the customer's price, so the customer always chooses; each quote shows whether the helper carries the skilled tag, and the customer chooses.
 
 7.  If the last ring ends with no helper, the task expires, the customer is offered a scheduled slot or the chance to raise their price, and the task appears in the admin unmatched queue.
 

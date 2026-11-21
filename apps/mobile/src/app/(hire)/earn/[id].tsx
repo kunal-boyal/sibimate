@@ -12,8 +12,8 @@ import { Screen } from '@/components/Screen';
 import { StatusPill } from '@/components/StatusPill';
 import { Text } from '@/components/Text';
 import { TextField } from '@/components/TextField';
-import { errorKey, formatPhone, useT } from '@/lib/i18n';
-import { api } from '@/lib/session';
+import { errorKey, formatPhone, formatSlot, useT } from '@/lib/i18n';
+import { api, useSession } from '@/lib/session';
 import { useLocationReporting } from '@/lib/use-location-reporting';
 
 const dark = themes.dark;
@@ -22,6 +22,7 @@ type Step = Parameters<typeof api.bookingStep>[1];
 /** One job in Earn mode: what to do, what it pays, and the next step. */
 export default function Job() {
   const t = useT();
+  const language = useSession((state) => state.language);
   const router = useRouter();
   const queryClient = useQueryClient();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -155,7 +156,14 @@ export default function Job() {
         )
       }
     >
-      <StatusPill status={job.status} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[10] }}>
+        <StatusPill status={job.status} />
+        {job.scheduleAt && job.status === 'assigned' ? (
+          <Text variant="bodySm" weight={600} color={dark.ink}>
+            {t('earn.at', { time: formatSlot(job.scheduleAt, language) })}
+          </Text>
+        ) : null}
+      </View>
       {job.status === 'paid' ? <Notice variant="accent">{t('earn.paid')}</Notice> : null}
       {job.helpersNeeded > 1 && job.status !== 'paid' ? (
         <Notice variant="accent">{t('earn.team', { count: job.helpersNeeded })}</Notice>

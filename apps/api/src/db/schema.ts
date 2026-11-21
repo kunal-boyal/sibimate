@@ -323,12 +323,10 @@ export const bookings = pgTable(
     ...timestamps,
   },
   (table) => [
-    // The database itself refuses a second helper on a task, or a second job for a busy helper.
+    // The database itself refuses a second helper on a task. A helper can hold jobs at different
+    // times; confirmHelper checks they are far enough apart, with the helper's row locked.
     uniqueIndex('bookings_one_active_per_task_idx')
       .on(table.taskId)
-      .where(sql`${table.status} = 'active'`),
-    uniqueIndex('bookings_one_active_per_helper_idx')
-      .on(table.helperId)
       .where(sql`${table.status} = 'active'`),
     index('bookings_helper_created_at_idx').on(table.helperId, table.createdAt),
   ],

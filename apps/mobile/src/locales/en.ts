@@ -245,6 +245,8 @@ export const en = {
   'account.deleteYes': 'Yes, delete it',
   'account.keep': 'Keep my account',
   'errors.account_busy': 'Finish or cancel your open tasks and jobs first.',
+  'errors.job_clash': 'You already have a job around that time.',
+  'errors.job_under_way': 'Finish the job you are on before setting off for this one.',
   'privacy.title': 'Privacy notice',
   'privacy.intro':
     'This explains, in plain words, what Sibimate collects about you, why, and what you can do about it.',

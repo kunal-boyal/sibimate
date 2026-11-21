@@ -10,10 +10,10 @@ import { Notice } from '@/components/Notice';
 import { Screen } from '@/components/Screen';
 import { StatusPill } from '@/components/StatusPill';
 import { Text } from '@/components/Text';
-import { errorKey, useT } from '@/lib/i18n';
+import { errorKey, formatSlot, useT } from '@/lib/i18n';
 import { formatDistance, getCurrentPoint } from '@/lib/location';
 import { useLocationReporting } from '@/lib/use-location-reporting';
-import { ApiClientError, api } from '@/lib/session';
+import { ApiClientError, api, useSession } from '@/lib/session';
 import type { TranslationKey } from '@/locales/en';
 
 const dark = themes.dark;
@@ -189,6 +189,7 @@ function Card({ onPress, children }: { onPress: () => void; children: React.Reac
 
 function NearbyCard({ task, onPress }: { task: NearbyTask; onPress: () => void }) {
   const t = useT();
+  const language = useSession((state) => state.language);
   return (
     <Card onPress={onPress}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: space[12] }}>
@@ -197,7 +198,13 @@ function NearbyCard({ task, onPress }: { task: NearbyTask; onPress: () => void }
             {task.title}
           </Text>
           <Text variant="caption" color={colors.inkMuted}>
-            {[t('earn.away', { distance: formatDistance(task.distanceM) }), task.category].filter(Boolean).join(' · ')}
+            {[
+              t('earn.away', { distance: formatDistance(task.distanceM) }),
+              task.category,
+              task.scheduleAt ? t('earn.at', { time: formatSlot(task.scheduleAt, language) }) : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
           </Text>
         </View>
         <Text variant="figure" color={colors.ink} style={{ fontSize: 22 }}>
@@ -215,6 +222,9 @@ function NearbyCard({ task, onPress }: { task: NearbyTask; onPress: () => void }
 
 function JobCard({ job, onPress }: { job: HelperBooking; onPress: () => void }) {
   const t = useT();
+  const language = useSession((state) => state.language);
+  // A job booked for later shows its slot, so a helper with several can tell them apart.
+  const slot = job.status === 'assigned' && job.scheduleAt ? formatSlot(job.scheduleAt, language) : null;
   return (
     <Card onPress={onPress}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: space[12] }}>
@@ -230,7 +240,14 @@ function JobCard({ job, onPress }: { job: HelperBooking; onPress: () => void }) 
           {formatRupees(job.netAmount)}
         </Text>
       </View>
-      <StatusPill status={job.status} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[8] }}>
+        <StatusPill status={job.status} />
+        {slot ? (
+          <Text variant="caption" weight={600} color={colors.ink}>
+            {slot}
+          </Text>
+        ) : null}
+      </View>
     </Card>
   );
 }

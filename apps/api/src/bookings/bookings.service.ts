@@ -28,7 +28,7 @@ import {
 import { TaskStateService } from '../tasks/task-state.service.js';
 import { canRaiseDispute, disputeView } from '../disputes/dispute-rules.js';
 import { SettingsService } from '../settings/settings.service.js';
-import { confirmHelper, helperUnavailable, isUniqueViolation } from './confirm-helper.js';
+import { confirmHelper, helperUnavailable } from './confirm-helper.js';
 
 export const CODE_RULES = { maxAttempts: 5, lockMinutes: 10 } as const;
 
@@ -109,9 +109,8 @@ export class BookingsService {
         { within: (tx, task) => confirmHelper(tx, task, helper, task.customerPrice) },
       );
     } catch (error) {
-      // The unique index on a helper's active booking: they were given another job a moment ago.
-      if (isUniqueViolation(error)) {
-        throw helperUnavailable('This helper already has a task under way.');
+      if (error instanceof ApiException && error.code === 'job_clash') {
+        throw helperUnavailable('This helper already has a job around that time.');
       }
       throw error;
     }
@@ -121,8 +120,12 @@ export class BookingsService {
 
   async listForHelper(helper: HelperProfileRow): Promise<HelperBooking[]> {
     const rows = await this.helperQuery(eq(bookings.helperId, helper.id))
-      // Jobs under way first, then the most recent.
-      .orderBy(sql`${bookings.status} = 'active' desc`, desc(bookings.createdAt))
+      // Jobs not yet finished first, soonest first, then the most recent.
+      .orderBy(
+        sql`${bookings.status} = 'active' desc`,
+        sql`case when ${bookings.status} = 'active' then coalesce(${tasks.scheduleAt}, ${bookings.createdAt}) end asc`,
+        desc(bookings.createdAt),
+      )
       .limit(30);
     const rules = await this.settings.current();
     return rows.map((row) => this.toHelperBooking(row, rules, helper.userId));
@@ -138,6 +141,23 @@ export class BookingsService {
 
   async enRoute(helper: HelperProfileRow, bookingId: string): Promise<HelperBooking> {
     const booking = await this.active(helper, bookingId);
+    // A helper can hold jobs at different times, but travels to one at a time.
+    const [current] = await this.db
+      .select({ id: bookings.id })
+      .from(bookings)
+      .innerJoin(tasks, eq(bookings.taskId, tasks.id))
+      .where(
+        and(
+          eq(bookings.helperId, helper.id),
+          eq(bookings.status, 'active'),
+          ne(bookings.id, booking.id),
+          inArray(tasks.status, ['en_route', 'in_progress']),
+        ),
+      )
+      .limit(1);
+    if (current) {
+      throw new ApiException(409, 'job_under_way', 'Finish the job you are on before setting off for this one.');
+    }
     await this.taskState.transition(booking.taskId, 'en_route', actor(helper));
     return this.getForHelper(helper, bookingId);
   }

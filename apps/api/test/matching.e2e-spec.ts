@@ -484,6 +484,75 @@ describe('Matching and offers (e2e)', () => {
     });
   });
 
+  describe('helpers with a job', () => {
+    const hoursAhead = (hours: number) => new Date(Date.now() + hours * 3_600_000).toISOString();
+    /** Posts a task for `hours` ahead and runs its first ring. */
+    async function laterTask(hours: number, title: string) {
+      const taskId = await postTask({ title, scheduleAt: hoursAhead(hours) });
+      if ((await task(taskId)).status === 'posted') {
+        await matching.runRing(taskId, -1);
+      }
+      await matching.runRing(taskId, 0);
+      return taskId;
+    }
+    const ids = (items: { id: string }[]) => items.map((item) => item.id).sort();
+
+    it('shows a busy helper tasks for later, and lets the customer choose them', async () => {
+      const busy = await helperAt(0.5, 'Busy');
+      await helperAt(1, 'Free');
+      const now = await postTask({ title: 'Move a sofa now' });
+      await as(admin).post(`/admin/tasks/${now}/assign`, { helperId: busy.id }).expect(204);
+
+      // Within three hours of the job they have, a helper is not shown a task; further away, they are.
+      const soon = await laterTask(1.5, 'Soon');
+      const afternoon = await laterTask(5, 'Afternoon');
+      const alsoAfternoon = await laterTask(6, 'Also afternoon');
+      const night = await laterTask(10, 'Night');
+      expect(ids(await nearby(busy.token))).toEqual([afternoon, alsoAfternoon, night].sort());
+      expect((await db.execute(sql`select 1 from task_offers where task_id = ${soon}`)).rows).toHaveLength(1);
+
+      await as(busy.token).post(`/helper/tasks/${afternoon}/quote`, { price: 16000 }).expect(200);
+      await as(busy.token).post(`/helper/tasks/${alsoAfternoon}/quote`, { price: 17000 }).expect(200);
+      const [offer] = await offers(afternoon);
+      await as(customer).post(`/tasks/${afternoon}/offers/${offer.id}/accept`).expect(204);
+
+      // Two jobs now, the sooner first. The offer for an hour after the new job is withdrawn; the night one stays.
+      const jobs = (await as(busy.token).get('/helper/bookings').expect(200)).body.items;
+      expect(jobs.map((job: { title: string }) => job.title)).toEqual(['Move a sofa now', 'Afternoon']);
+      expect(ids(await nearby(busy.token))).toEqual([night]);
+      expect(await offers(alsoAfternoon)).toEqual([]);
+
+      // Nobody can give them a third job around either time.
+      const clash = await laterTask(5.5, 'Clash');
+      const refused = await as(admin).post(`/admin/tasks/${clash}/assign`, { helperId: busy.id }).expect(409);
+      expect(refused.body).toMatchObject({ code: 'helper_unavailable', message: expect.stringContaining('around') });
+      const tooSoon = await postTask({ title: 'Also now' });
+      await as(admin).post(`/admin/tasks/${tooSoon}/assign`, { helperId: busy.id }).expect(409);
+      // A night job is far enough from both.
+      await as(busy.token).post(`/helper/tasks/${night}/accept`).expect(200);
+    });
+
+    it('sends a helper to one job at a time, and frees the slot when a job is done', async () => {
+      const helper = await helperAt(0.5, 'Aman');
+      const now = await postTask({ title: 'Now' });
+      await as(admin).post(`/admin/tasks/${now}/assign`, { helperId: helper.id }).expect(204);
+      const later = await laterTask(4, 'Later');
+      await as(helper.token).post(`/helper/tasks/${later}/accept`).expect(200);
+      const [first, second] = (await as(helper.token).get('/helper/bookings').expect(200)).body.items;
+      expect([first.title, second.title]).toEqual(['Now', 'Later']);
+
+      await as(helper.token).post(`/bookings/${first.id}/en-route`).expect(200);
+      const refused = await as(helper.token).post(`/bookings/${second.id}/en-route`).expect(409);
+      expect(refused.body.code).toBe('job_under_way');
+
+      // A job that is done and only waiting for payment no longer holds the helper's time.
+      await db.execute(sql`update tasks set status = 'completed' where id = ${now}`);
+      const next = await postTask({ title: 'Next now' });
+      await matching.runRing(next, 0);
+      expect(ids(await nearby(helper.token))).toEqual([next]);
+    });
+  });
+
   describe('search area', () => {
     it('widens at once when the customer asks, and keeps widening on its own', async () => {
       await helperAt(1, 'Near');

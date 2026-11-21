@@ -9,8 +9,8 @@ import { Button } from '@/components/Button';
 import { Notice } from '@/components/Notice';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
-import { errorKey, useT } from '@/lib/i18n';
-import { api } from '@/lib/session';
+import { errorKey, formatSlot, useT } from '@/lib/i18n';
+import { api, useSession } from '@/lib/session';
 import { formatDistance } from '@/lib/location';
 
 const dark = themes.dark;
@@ -19,6 +19,7 @@ const STEP = 1000; // ₹10 in paise
 /** A task the helper has been shown: take it at the customer's price, name a price, or pass. */
 export default function NearbyTaskScreen() {
   const t = useT();
+  const language = useSession((state) => state.language);
   const router = useRouter();
   const queryClient = useQueryClient();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -122,9 +123,7 @@ export default function NearbyTaskScreen() {
           t('earn.away', { distance: formatDistance(task.distanceM) }),
           task.category,
           task.scheduleAt
-            ? t('earn.at', {
-                time: new Date(task.scheduleAt).toLocaleString('en-IN', { weekday: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
-              })
+            ? t('earn.at', { time: formatSlot(task.scheduleAt, language) })
             : t('earn.now'),
         ]
           .filter(Boolean)

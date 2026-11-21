@@ -20,14 +20,21 @@ export const HELPER_SEEN_SECONDS = 5 * 60;
 /** How often the app reports a helper's location while they are online. */
 export const HELPER_LOCATION_INTERVAL_SECONDS = 60;
 
+/**
+ * A helper can hold more than one job when the jobs are at least this far
+ * apart, so a helper busy now can still take a task for later in the day. A job
+ * not yet finished counts as happening at its slot, or now once that has passed.
+ */
+export const JOB_GAP_MINUTES = 180;
+
 export const HELPER_RADIUS_DEFAULT_M = 5000;
 export const HELPER_RADIUS_MAX_M = 15_000;
 
 /**
  * notified: the helper has been shown the task. quoted: they named a price, or
  * offered to do a skilled job at the customer's price. accepted: they got the
- * job. declined: they passed. withdrawn: they were confirmed on another task.
- * expired: someone else got the job, or the task ended.
+ * job. declined: they passed. withdrawn: they were confirmed on another task
+ * around the same time. expired: someone else got the job, or the task ended.
  */
 export const OFFER_STATUSES = ['notified', 'quoted', 'accepted', 'declined', 'withdrawn', 'expired'] as const;
 export type OfferStatus = (typeof OFFER_STATUSES)[number];

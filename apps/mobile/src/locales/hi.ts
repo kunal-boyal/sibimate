@@ -245,6 +245,8 @@ export const hi: Record<TranslationKey, string> = {
   'account.deleteYes': 'हाँ, हटाएँ',
   'account.keep': 'अकाउंट रखें',
   'errors.account_busy': 'पहले अपने खुले काम पूरे या रद्द करें।',
+  'errors.job_clash': 'उस समय के आसपास आपका एक और काम है।',
+  'errors.job_under_way': 'इस काम के लिए निकलने से पहले अभी वाला काम पूरा करें।',
   'privacy.title': 'प्राइवेसी नोटिस',
   'privacy.intro':
     'यहाँ सरल शब्दों में बताया गया है कि Sibimate आपके बारे में क्या जानकारी लेता है, क्यों, और आप इस बारे में क्या कर सकते हैं।',

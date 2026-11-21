@@ -22,3 +22,13 @@ export function errorKey(error: unknown): TranslationKey {
 export function formatPhone(phone: string): string {
   return phone.replace(/^\+91(\d{5})(\d{5})$/, '+91\u00A0$1\u00A0$2');
 }
+
+/** A task's time slot, such as "Sat 21, 3:00 pm", in the app's language. */
+export function formatSlot(iso: string, language: 'en' | 'hi'): string {
+  return new Date(iso).toLocaleString(language === 'hi' ? 'hi-IN' : 'en-IN', {
+    weekday: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}

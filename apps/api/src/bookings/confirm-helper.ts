@@ -1,8 +1,9 @@
-import { DEFAULT_COMMISSION_BPS, VERIFICATION_LEVELS, commissionFor } from '@sibimate/shared';
-import { and, eq, inArray, ne } from 'drizzle-orm';
+import { DEFAULT_COMMISSION_BPS, JOB_GAP_MINUTES, VERIFICATION_LEVELS, commissionFor } from '@sibimate/shared';
+import { and, eq, inArray, ne, sql } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception.js';
-import { type HelperProfileRow, type TaskRow, bookings, taskCategories, taskOffers } from '../db/schema.js';
+import { type HelperProfileRow, type TaskRow, bookings, helperProfiles, taskCategories, taskOffers } from '../db/schema.js';
 import type { Transaction } from '../tasks/task-state.service.js';
+import { hasClashingJob, taskTime } from './job-clash.js';
 
 export const helperUnavailable = (message: string) => new ApiException(409, 'helper_unavailable', message);
 
@@ -27,6 +28,17 @@ export async function confirmHelper(tx: Transaction, task: TaskRow, helper: Help
     throw helperUnavailable(`This task needs a helper verified to the ${category.minVerificationLevel} level.`);
   }
 
+  // Locking the helper's row makes two confirmations for the same helper take turns,
+  // so the second sees the first's booking.
+  await tx.select({ id: helperProfiles.id }).from(helperProfiles).where(eq(helperProfiles.id, helper.id)).for('update');
+  const when = taskTime(sql`${task.scheduleAt}::timestamptz`);
+  const {
+    rows: [clash],
+  } = await tx.execute<{ clash: boolean }>(sql`select ${hasClashingJob(sql`${helper.id}::uuid`, when)} as clash`);
+  if (clash?.clash) {
+    throw new ApiException(409, 'job_clash', 'This helper already has a job around that time.');
+  }
+
   const [booking] = await tx
     .insert(bookings)
     .values({
@@ -48,17 +60,16 @@ export async function confirmHelper(tx: Transaction, task: TaskRow, helper: Help
     .update(taskOffers)
     .set({ status: 'accepted' })
     .where(and(eq(taskOffers.taskId, task.id), eq(taskOffers.helperId, helper.id)));
-  // A helper does one job at a time, so their offers on other tasks are withdrawn.
-  await tx
-    .update(taskOffers)
-    .set({ status: 'withdrawn' })
-    .where(and(eq(taskOffers.helperId, helper.id), ne(taskOffers.taskId, task.id), open));
+  // The helper's offers on other tasks around the same time are withdrawn; offers for other times stay open.
+  await tx.execute(sql`
+    update task_offers o set status = 'withdrawn', updated_at = now()
+    from tasks t
+    where t.id = o.task_id
+      and o.helper_id = ${helper.id}
+      and o.task_id <> ${task.id}
+      and o.status in ('notified', 'quoted')
+      and abs(extract(epoch from (${taskTime(sql`t.schedule_at`)} - ${when}))) < ${JOB_GAP_MINUTES * 60}
+  `);
 
   return booking!.id;
-}
-
-/** True for the database's refusal of a second active booking for a helper or a task. */
-export function isUniqueViolation(error: unknown): boolean {
-  const code = (value: unknown) => (value as { code?: string } | null)?.code;
-  return code(error) === '23505' || code((error as { cause?: unknown } | null)?.cause) === '23505';
 }

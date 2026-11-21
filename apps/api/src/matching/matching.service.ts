@@ -5,6 +5,7 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { Database } from '../db/db.js';
 import { taskOffers, tasks } from '../db/schema.js';
 import { Notifier } from '../live/notifier.js';
+import { hasClashingJob, hasOpenJob, taskTime } from '../bookings/job-clash.js';
 import { ApiException } from '../common/api-exception.js';
 import { TaskStateService } from '../tasks/task-state.service.js';
 import { MatchingScheduler } from './matching-scheduler.js';
@@ -160,13 +161,16 @@ export class MatchingService {
         and ha.seen_at > now() - make_interval(secs => ${HELPER_SEEN_SECONDS})
         -- The verification levels are an enum in rising order.
         and hp.verification_level >= coalesce(c.min_verification_level, 'basic')
-        and not exists (select 1 from bookings b where b.helper_id = hp.id and b.status = 'active')
+        -- A helper with a job around the same time cannot take this one; a job hours away is no bar.
+        and not ${hasClashingJob(sql`hp.id`, taskTime(sql`t.schedule_at`))}
         and not exists (select 1 from task_offers o where o.task_id = t.id and o.helper_id = hp.id)
         -- Inside the search area, and inside the distance the helper is willing to travel.
         and ST_DWithin(ha.last_location, t.pickup_point, least(${radiusM}, ha.radius_m))
       order by
         ST_Distance(ha.last_location, t.pickup_point) / 1000.0
         + 2.0 * hp.cancelled_count / (hp.completed_count + hp.cancelled_count + 1)
+        -- Helpers with no other job are told first.
+        + case when ${hasOpenJob(sql`hp.id`)} then 1.0 else 0 end
       limit ${MATCHING_NOTIFY_LIMIT}
       on conflict do nothing
       returning helper_id
