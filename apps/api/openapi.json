@@ -942,6 +942,14 @@
                     "requiresSkilled": {
                       "type": "boolean"
                     },
+                    "minVerificationLevel": {
+                      "type": "string",
+                      "enum": [
+                        "basic",
+                        "verified",
+                        "specialised"
+                      ]
+                    },
                     "helpersNeeded": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -1130,6 +1138,7 @@
                     "description",
                     "category",
                     "requiresSkilled",
+                    "minVerificationLevel",
                     "helpersNeeded",
                     "customerPrice",
                     "paymentMethod",
@@ -1246,6 +1255,14 @@
                           },
                           "requiresSkilled": {
                             "type": "boolean"
+                          },
+                          "minVerificationLevel": {
+                            "type": "string",
+                            "enum": [
+                              "basic",
+                              "verified",
+                              "specialised"
+                            ]
                           },
                           "helpersNeeded": {
                             "type": "integer",
@@ -1435,6 +1452,7 @@
                           "description",
                           "category",
                           "requiresSkilled",
+                          "minVerificationLevel",
                           "helpersNeeded",
                           "customerPrice",
                           "paymentMethod",
@@ -1536,6 +1554,14 @@
                     },
                     "requiresSkilled": {
                       "type": "boolean"
+                    },
+                    "minVerificationLevel": {
+                      "type": "string",
+                      "enum": [
+                        "basic",
+                        "verified",
+                        "specialised"
+                      ]
                     },
                     "helpersNeeded": {
                       "type": "integer",
@@ -1725,6 +1751,7 @@
                     "description",
                     "category",
                     "requiresSkilled",
+                    "minVerificationLevel",
                     "helpersNeeded",
                     "customerPrice",
                     "paymentMethod",
@@ -1833,6 +1860,14 @@
                     "requiresSkilled": {
                       "type": "boolean"
                     },
+                    "minVerificationLevel": {
+                      "type": "string",
+                      "enum": [
+                        "basic",
+                        "verified",
+                        "specialised"
+                      ]
+                    },
                     "helpersNeeded": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -2021,6 +2056,7 @@
                     "description",
                     "category",
                     "requiresSkilled",
+                    "minVerificationLevel",
                     "helpersNeeded",
                     "customerPrice",
                     "paymentMethod",
@@ -2112,6 +2148,14 @@
                     "requiresSkilled": {
                       "type": "boolean"
                     },
+                    "minVerificationLevel": {
+                      "type": "string",
+                      "enum": [
+                        "basic",
+                        "verified",
+                        "specialised"
+                      ]
+                    },
                     "helpersNeeded": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -2300,6 +2344,7 @@
                     "description",
                     "category",
                     "requiresSkilled",
+                    "minVerificationLevel",
                     "helpersNeeded",
                     "customerPrice",
                     "paymentMethod",
@@ -3994,6 +4039,14 @@
                           "requiresSkilled": {
                             "type": "boolean"
                           },
+                          "minVerificationLevel": {
+                            "type": "string",
+                            "enum": [
+                              "basic",
+                              "verified",
+                              "specialised"
+                            ]
+                          },
                           "helpersNeeded": {
                             "type": "integer",
                             "minimum": -9007199254740991,
@@ -4091,6 +4144,7 @@
                           "description",
                           "category",
                           "requiresSkilled",
+                          "minVerificationLevel",
                           "helpersNeeded",
                           "customerPrice",
                           "paymentMethod",

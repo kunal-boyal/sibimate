@@ -1,7 +1,7 @@
 import { DEFAULT_COMMISSION_BPS, JOB_GAP_MINUTES, VERIFICATION_LEVELS, commissionFor } from '@sibimate/shared';
 import { and, eq, inArray, ne, sql } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception.js';
-import { type HelperProfileRow, type TaskRow, bookings, helperProfiles, taskCategories, taskOffers } from '../db/schema.js';
+import { type HelperProfileRow, type TaskRow, bookings, helperProfiles, taskOffers } from '../db/schema.js';
 import type { Transaction } from '../tasks/task-state.service.js';
 import { hasClashingJob, taskTime } from './job-clash.js';
 
@@ -20,12 +20,9 @@ export async function confirmHelper(tx: Transaction, task: TaskRow, helper: Help
   if (task.customerId === helper.userId) {
     throw helperUnavailable('A helper cannot take their own task.');
   }
-  const [category] = task.categoryId
-    ? await tx.select().from(taskCategories).where(eq(taskCategories.id, task.categoryId))
-    : [];
   const rank = (level: (typeof VERIFICATION_LEVELS)[number]) => VERIFICATION_LEVELS.indexOf(level);
-  if (category && rank(helper.verificationLevel) < rank(category.minVerificationLevel)) {
-    throw helperUnavailable(`This task needs a helper verified to the ${category.minVerificationLevel} level.`);
+  if (rank(helper.verificationLevel) < rank(task.minVerificationLevel)) {
+    throw helperUnavailable(`This task needs a helper verified to the ${task.minVerificationLevel} level.`);
   }
 
   // Locking the helper's row makes two confirmations for the same helper take turns,

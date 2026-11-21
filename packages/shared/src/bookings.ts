@@ -97,6 +97,8 @@ export const adminTaskSchema = z.object({
   description: z.string(),
   category: taskCategorySchema.nullable(),
   requiresSkilled: z.boolean(),
+  /** The verification level a helper needs to take this task, set from its category when it is posted. */
+  minVerificationLevel: z.enum(VERIFICATION_LEVELS),
   helpersNeeded: z.number().int(),
   customerPrice: z.number().int(),
   paymentMethod: z.enum(PAYMENT_METHODS),

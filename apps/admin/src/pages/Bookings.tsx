@@ -9,6 +9,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api } from '../api';
+import { LEVELS, meetsLevel } from '../levels';
 
 const FILTERS = [
   ['unassigned', 'Needs a helper'],
@@ -145,7 +146,11 @@ export function Bookings() {
 function TaskPanel({ task }: { task: AdminTask }) {
   const queryClient = useQueryClient();
   const helpers = useQuery({ queryKey: ['helpers'], queryFn: api.helpers });
-  const free = (helpers.data?.items ?? []).filter((helper) => helper.status === 'active' && !helper.busy);
+  // Only helpers verified to the level the task needs can be given it.
+  const free = (helpers.data?.items ?? []).filter(
+    (helper) =>
+      helper.status === 'active' && !helper.busy && meetsLevel(helper.verificationLevel, task.minVerificationLevel),
+  );
   const [helperId, setHelperId] = useState('');
   const assign = useMutation({
     mutationFn: () => api.assign(task.id, helperId),
@@ -195,6 +200,10 @@ function TaskPanel({ task }: { task: AdminTask }) {
           </dd>
         </div>
         <div>
+          <dt>Helper level</dt>
+          <dd>{LEVELS[task.minVerificationLevel]} or above</dd>
+        </div>
+        <div>
           <dt>When</dt>
           <dd>{task.scheduleAt ? posted(task.scheduleAt) : 'Right now'}</dd>
         </div>
@@ -221,7 +230,9 @@ function TaskPanel({ task }: { task: AdminTask }) {
           <label className="field">
             <span>Assign a helper</span>
             <select value={helperId} onChange={(event) => setHelperId(event.target.value)} required>
-              <option value="">{free.length ? 'Choose a free helper' : 'No helper is free'}</option>
+              <option value="">
+                {free.length ? 'Choose a free helper' : 'No free helper is verified to this level'}
+              </option>
               {free.map((helper) => (
                 <option key={helper.id} value={helper.id}>
                   {helper.name ?? helper.phone} · {helper.skillTag} · {helper.verificationLevel}

@@ -347,6 +347,7 @@ export default function TaskScreen() {
             task.helpersNeeded === 1 ? t('confirm.helpersOne') : t('confirm.helpersMany', { count: task.helpersNeeded })
           }
         />
+        <Row label={t('task.level')} value={t(`task.level.${task.minVerificationLevel}`)} />
         <Row label={t('task.payment')} value={t(`task.${task.paymentMethod}`)} />
         <Row label={t('task.address')} value={task.address} />
       </View>

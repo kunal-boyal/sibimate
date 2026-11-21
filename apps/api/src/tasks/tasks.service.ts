@@ -1,6 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectDrizzle } from '@nestjs/drizzle';
-import { ACTIVE_TASK_STATUSES, type ListTasksQuery, type Task, type TaskList, SCHEDULE_LEAD_MINUTES, SCHEDULE_MAX_DAYS } from '@sibimate/shared';
+import {
+  ACTIVE_TASK_STATUSES,
+  type ListTasksQuery,
+  type Task,
+  type TaskList,
+  type VerificationLevel,
+  SCHEDULE_LEAD_MINUTES,
+  SCHEDULE_MAX_DAYS,
+} from '@sibimate/shared';
 import { and, desc, eq, inArray, lt, ne, or, sql } from 'drizzle-orm';
 import type { z } from 'zod';
 import type { createTaskSchema } from '@sibimate/shared';
@@ -14,6 +22,7 @@ import { MatchingScheduler } from '../matching/matching-scheduler.js';
 import { START_RING } from '../matching/matching.service.js';
 import type { Database } from '../db/db.js';
 import {
+  DEFAULT_TASK_VERIFICATION_LEVEL,
   type TaskCategoryRow,
   type TaskRow,
   type UserRow,
@@ -66,6 +75,7 @@ export class TasksService {
     const created = await this.db.transaction(async (tx) => {
       let categoryId: string | null = null;
       let provisional = false;
+      let minVerificationLevel: VerificationLevel = DEFAULT_TASK_VERIFICATION_LEVEL;
       if (interpretation) {
         const listed = await tx.select().from(taskCategories);
         const category = categoryOf(interpretation.output, listed);
@@ -84,6 +94,10 @@ export class TasksService {
           .onConflictDoNothing();
         const [row] = await tx.select().from(taskCategories).where(eq(taskCategories.slug, category.slug));
         categoryId = row!.id;
+        // A category no admin has approved keeps the safe default until one decides.
+        if (row!.reviewStatus === 'approved') {
+          minVerificationLevel = row!.minVerificationLevel;
+        }
       }
 
       // One statement decides whether this key has been used, so a retry never makes a second task.
@@ -97,6 +111,7 @@ export class TasksService {
           descriptionRaw: interpretation?.inputText ?? input.description,
           descriptionRefined: input.description,
           requiresSkilled: input.requiresSkilled,
+          minVerificationLevel,
           details: interpretation && {
             estimatedMinutes: interpretation.output.estimatedMinutes,
             requirements: interpretation.output.requirements,
@@ -313,6 +328,7 @@ export class TasksService {
         provisional: category.reviewStatus !== 'approved',
       },
       requiresSkilled: task.requiresSkilled,
+      minVerificationLevel: task.minVerificationLevel,
       helpersNeeded: task.helpersNeeded,
       customerPrice: task.customerPrice,
       paymentMethod: task.paymentMethod,

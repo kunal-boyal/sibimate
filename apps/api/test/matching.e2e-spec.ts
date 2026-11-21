@@ -228,14 +228,25 @@ describe('Matching and offers (e2e)', () => {
       expect(await nearby(silent.token)).toHaveLength(1);
     });
 
-    it('shows a task that needs entering a home only to helpers verified for it', async () => {
+    it('shows a task only to helpers verified to the level it needs', async () => {
       const basic = await helperAt(0.5, 'Basic', { verificationLevel: 'basic' });
       const verified = await helperAt(1, 'Verified');
-      const taskId = await postTask();
-      await db.execute(sql`update tasks set category_id = (select id from task_categories where slug = 'cleaning')`);
-      expect(await matching.runRing(taskId, 0)).toEqual({ notified: 1 });
+      // A typed task has no category, so it needs a helper who may enter homes.
+      const home = await postTask();
+      expect((await task(home)).minVerificationLevel).toBe('verified');
+      expect(await matching.runRing(home, 0)).toEqual({ notified: 1 });
       expect(await nearby(basic.token)).toHaveLength(0);
       expect(await nearby(verified.token)).toHaveLength(1);
+      // An admin cannot give it to the basic helper either.
+      const refused = await as(admin).post(`/admin/tasks/${home}/assign`, { helperId: basic.id }).expect(409);
+      expect(refused.body.message).toContain('verified');
+
+      // A task that needs only an ID check goes to both, and the dashboard shows its level.
+      const errand = await postTask({ title: 'Drop a parcel' });
+      await db.execute(sql`update tasks set min_verification_level = 'basic' where id = ${errand}`);
+      expect(await matching.runRing(errand, 0)).toEqual({ notified: 2 });
+      const admins = (await as(admin).get('/admin/tasks').expect(200)).body.items;
+      expect(admins.find((item: { id: string }) => item.id === errand).minVerificationLevel).toBe('basic');
     });
 
     it('expires the task after the last ring, and lets the customer post it again at a higher price', async () => {
@@ -637,7 +648,9 @@ describe('Matching and offers (e2e)', () => {
       await as(admin).post(`/admin/tasks/${randomUUID()}/widen`, { radiusM: 5000 }).expect(404);
       await as(customer).post(`/admin/tasks/${taskId}/widen`, { radiusM: 5000 }).expect(401);
 
-      await as(await adminWithRole('finance')).post(`/admin/tasks/${taskId}/widen`, { radiusM: 5000 }).expect(403);
+      await as(await adminWithRole('finance'))
+        .post(`/admin/tasks/${taskId}/widen`, { radiusM: 5000 })
+        .expect(403);
 
       await as(customer).post(`/tasks/${taskId}/cancel`).expect(200);
       await as(admin).post(`/admin/tasks/${taskId}/widen`, { radiusM: 5000 }).expect(409);
@@ -646,7 +659,11 @@ describe('Matching and offers (e2e)', () => {
 
   describe('customers page', () => {
     const customers = async (q = '') =>
-      (await as(admin).get(`/admin/customers${q ? `?q=${encodeURIComponent(q)}` : ''}`).expect(200)).body.items;
+      (
+        await as(admin)
+          .get(`/admin/customers${q ? `?q=${encodeURIComponent(q)}` : ''}`)
+          .expect(200)
+      ).body.items;
 
     it('lists everyone signed up, newest first, with their tasks counted, and finds them by name or number', async () => {
       const first = await postTask();
@@ -702,7 +719,10 @@ describe('Matching and offers (e2e)', () => {
       customer = await signIn('+919876543210');
       await as(customer).get('/tasks').expect(200);
       const audit = (await as(admin).get('/admin/audit').expect(200)).body.items;
-      expect(audit.slice(0, 2).map((entry: { action: string }) => entry.action)).toEqual(['user.unblock', 'user.block']);
+      expect(audit.slice(0, 2).map((entry: { action: string }) => entry.action)).toEqual([
+        'user.unblock',
+        'user.block',
+      ]);
     });
 
     it('waits until a job under way is settled, for the customer and for the helper', async () => {
@@ -723,7 +743,9 @@ describe('Matching and offers (e2e)', () => {
 
     it('stops showing tasks to a blocked helper', async () => {
       const helper = await helperAt(1, 'Aman');
-      await as(admin).post(`/admin/customers/${(await customers('Aman'))[0].id}/block`, { reason: 'Fake documents' }).expect(200);
+      await as(admin)
+        .post(`/admin/customers/${(await customers('Aman'))[0].id}/block`, { reason: 'Fake documents' })
+        .expect(200);
       const taskId = await postTask();
       expect(await matching.runRing(taskId, 0)).toEqual({ notified: 0 });
       await as(helper.token).get('/helper/tasks/nearby').expect(401);

@@ -116,6 +116,7 @@ describe('api client', () => {
       paymentMethod: 'cash',
       scheduleAt: null,
       searchRadiusM: 2000,
+      minVerificationLevel: 'basic',
       status: 'matching',
       address: '14 Shanti Path',
       pickup: { lat: 26.85, lng: 75.76 },

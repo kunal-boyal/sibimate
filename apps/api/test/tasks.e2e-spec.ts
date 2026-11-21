@@ -234,6 +234,8 @@ describe('Posting a task (e2e)', () => {
       expect(posted.body).toMatchObject({
         title: 'Carry two suitcases',
         category: { slug: 'carry-luggage', provisional: false },
+        // Carrying luggage happens in public, so a helper with an ID check is enough.
+        minVerificationLevel: 'basic',
         customerPrice: 15000,
         paymentMethod: 'cash',
         helpersNeeded: 1,
@@ -266,7 +268,8 @@ describe('Posting a task (e2e)', () => {
 
     it('posts a typed task with no category, for an admin to review', async () => {
       const posted = await postTask(asha, taskBody()).expect(201);
-      expect(posted.body).toMatchObject({ category: null, status: 'matching' });
+      // With no category to go by, only helpers who may enter homes are shown it.
+      expect(posted.body).toMatchObject({ category: null, minVerificationLevel: 'verified', status: 'matching' });
       const { rows } = await db.execute(sql`select needs_review from tasks`);
       expect(rows).toEqual([{ needs_review: true }]);
     });
@@ -290,6 +293,7 @@ describe('Posting a task (e2e)', () => {
 
       const posted = await postTask(asha, taskBody({ interpretationId: draft.id, title: draft.title })).expect(201);
       expect(posted.body.category).toEqual({ slug: 'pet-care', name: 'Pet care', provisional: true });
+      expect(posted.body.minVerificationLevel).toBe('verified');
       const { rows } = await db.execute(
         sql`select source, review_status, active from task_categories where slug = 'pet-care'`,
       );
@@ -338,7 +342,7 @@ describe('Posting a task (e2e)', () => {
       await http()
         .post(`/v1/admin/categories/${petCare.id}/approve`)
         .set('Authorization', `Bearer ${admin}`)
-        .send({ name: 'Pet care', requiresSkilled: false, minVerificationLevel: 'verified' })
+        .send({ name: 'Pet care', requiresSkilled: false, minVerificationLevel: 'basic' })
         .expect(204);
       await http()
         .post(`/v1/admin/categories/${dogWalking.id}/merge`)
@@ -356,6 +360,9 @@ describe('Posting a task (e2e)', () => {
         reviewStatus: 'rejected',
         taskCount: 0,
       });
+      // Both tasks were still looking for a helper, so they take the level the admin decided.
+      const levels = await db.execute(sql`select min_verification_level from tasks`);
+      expect(levels.rows).toEqual([{ min_verification_level: 'basic' }, { min_verification_level: 'basic' }]);
 
       // The approved category is now offered to the model, and the merged one is not.
       const seen = vi.spyOn(interpreter, 'interpret');

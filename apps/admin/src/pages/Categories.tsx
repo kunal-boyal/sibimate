@@ -2,12 +2,7 @@ import { type AdminCategory, VERIFICATION_LEVELS, type VerificationLevel } from 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { api } from '../api';
-
-const LEVELS: Record<VerificationLevel, string> = {
-  basic: 'Basic: public places',
-  verified: 'Verified: inside homes',
-  specialised: 'Specialised',
-};
+import { LEVELS } from '../levels';
 
 /** The categories tasks are filed under, and the ones the AI proposed that wait for a decision. */
 export function Categories() {

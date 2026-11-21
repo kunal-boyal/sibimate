@@ -127,6 +127,8 @@ const geographyPoint = customType<{ data: GeoPoint; driverData: unknown }>({
 });
 
 export const verificationLevelEnum = pgEnum('verification_level', VERIFICATION_LEVELS);
+/** A task with no category, or a category no admin has reviewed, needs a helper who may enter homes. */
+export const DEFAULT_TASK_VERIFICATION_LEVEL = 'verified';
 export const riskLevelEnum = pgEnum('risk_level', RISK_LEVELS);
 export const categorySourceEnum = pgEnum('category_source', ['seed', 'ai', 'admin']);
 export const categoryReviewStatusEnum = pgEnum('category_review_status', ['approved', 'pending', 'rejected']);
@@ -146,7 +148,9 @@ export const taskCategories = pgTable('task_categories', {
   source: categorySourceEnum('source').notNull().default('seed'),
   reviewStatus: categoryReviewStatusEnum('review_status').notNull().default('approved'),
   riskLevel: riskLevelEnum('risk_level').notNull().default('low'),
-  minVerificationLevel: verificationLevelEnum('min_verification_level').notNull().default('verified'),
+  minVerificationLevel: verificationLevelEnum('min_verification_level')
+    .notNull()
+    .default(DEFAULT_TASK_VERIFICATION_LEVEL),
   /** Only active categories are offered to the model. */
   active: boolean('active').notNull().default(true),
   ...timestamps,
@@ -187,6 +191,10 @@ export const tasks = pgTable(
     descriptionRaw: text('description_raw').notNull(),
     descriptionRefined: text('description_refined').notNull(),
     requiresSkilled: boolean('requires_skilled').notNull(),
+    /** Copied from the category when the task is posted, so later changes to the category do not move it. */
+    minVerificationLevel: verificationLevelEnum('min_verification_level')
+      .notNull()
+      .default(DEFAULT_TASK_VERIFICATION_LEVEL),
     details: jsonb('details').$type<{ estimatedMinutes?: { min: number; max: number }; requirements?: string[] }>(),
     pickupPoint: geographyPoint('pickup_point').notNull(),
     dropPoint: geographyPoint('drop_point'),

@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDrizzle } from '@nestjs/drizzle';
-import type { AdminCategory, ApproveCategory } from '@sibimate/shared';
-import { and, asc, count, eq, sql } from 'drizzle-orm';
+import type { AdminCategory, ApproveCategory, VerificationLevel } from '@sibimate/shared';
+import { and, asc, count, eq, inArray, sql } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception.js';
 import type { Database } from '../db/db.js';
 import { taskCategories, tasks } from '../db/schema.js';
+import type { Transaction } from '../tasks/task-state.service.js';
 
 /** Reviewing the categories the model proposes: approve them as they are or corrected, or fold them into one that exists. */
 @Injectable()
@@ -38,10 +39,14 @@ export class CategoriesService {
 
   async approve(id: string, changes: ApproveCategory): Promise<void> {
     await this.pending(id);
-    await this.db
-      .update(taskCategories)
-      .set({ ...changes, reviewStatus: 'approved', active: true })
-      .where(eq(taskCategories.id, id));
+    await this.db.transaction(async (tx) => {
+      const [category] = await tx
+        .update(taskCategories)
+        .set({ ...changes, reviewStatus: 'approved', active: true })
+        .where(eq(taskCategories.id, id))
+        .returning();
+      await this.applyLevel(tx, id, category!.minVerificationLevel);
+    });
   }
 
   async merge(id: string, intoId: string): Promise<void> {
@@ -56,9 +61,18 @@ export class CategoriesService {
       ]);
     }
     await this.db.transaction(async (tx) => {
+      await this.applyLevel(tx, id, target.minVerificationLevel);
       await tx.update(tasks).set({ categoryId: intoId }).where(eq(tasks.categoryId, id));
       await tx.update(taskCategories).set({ reviewStatus: 'rejected', active: false }).where(eq(taskCategories.id, id));
     });
+  }
+
+  /** Tasks still waiting for a helper in a category an admin has just decided take that level. Tasks a helper has keep theirs. */
+  private async applyLevel(tx: Transaction, categoryId: string, level: VerificationLevel) {
+    await tx
+      .update(tasks)
+      .set({ minVerificationLevel: level })
+      .where(and(eq(tasks.categoryId, categoryId), inArray(tasks.status, ['posted', 'matching', 'expired'])));
   }
 
   private async pending(id: string) {

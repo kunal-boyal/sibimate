@@ -25,7 +25,9 @@ function effectiveRadius(ringRadiusM: number, task: { customerRadiusM: number | 
   if (task.customerRadiusM === null) {
     return ringRadiusM;
   }
-  return task.customerRadiusCap ? Math.min(ringRadiusM, task.customerRadiusM) : Math.max(ringRadiusM, task.customerRadiusM);
+  return task.customerRadiusCap
+    ? Math.min(ringRadiusM, task.customerRadiusM)
+    : Math.max(ringRadiusM, task.customerRadiusM);
 }
 
 export type RingOutcome = 'stopped' | 'expired' | 'waiting-for-customer' | { notified: number };
@@ -82,7 +84,11 @@ export class MatchingService {
       throw new ApiException(404, 'not_found', 'Task not found.');
     }
     if (task.status !== 'matching') {
-      throw new ApiException(409, 'invalid_transition', 'The search area can be changed only while looking for a helper.');
+      throw new ApiException(
+        409,
+        'invalid_transition',
+        'The search area can be changed only while looking for a helper.',
+      );
     }
     await this.db
       .update(tasks)
@@ -154,13 +160,12 @@ export class MatchingService {
       from tasks t
       join helper_profiles hp on hp.status = 'active' and hp.user_id <> t.customer_id
       join helper_availability ha on ha.helper_id = hp.id
-      left join task_categories c on c.id = t.category_id
       where t.id = ${taskId}
         and ha.is_online
         and ha.last_location is not null
         and ha.seen_at > now() - make_interval(secs => ${HELPER_SEEN_SECONDS})
         -- The verification levels are an enum in rising order.
-        and hp.verification_level >= coalesce(c.min_verification_level, 'basic')
+        and hp.verification_level >= t.min_verification_level
         -- A helper with a job around the same time cannot take this one; a job hours away is no bar.
         and not ${hasClashingJob(sql`hp.id`, taskTime(sql`t.schedule_at`))}
         and not exists (select 1 from task_offers o where o.task_id = t.id and o.helper_id = hp.id)

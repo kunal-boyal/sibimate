@@ -85,6 +85,13 @@
       "when": 1795247143795,
       "tag": "0011_previous_bug",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1795248924598,
+      "tag": "0012_polite_karen_page",
+      "breakpoints": true
     }
   ]
 }

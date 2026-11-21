@@ -81,6 +81,7 @@ export class BookingsService {
         provisional: category.reviewStatus !== 'approved',
       },
       requiresSkilled: task.requiresSkilled,
+      minVerificationLevel: task.minVerificationLevel,
       helpersNeeded: task.helpersNeeded,
       customerPrice: task.customerPrice,
       paymentMethod: task.paymentMethod,
