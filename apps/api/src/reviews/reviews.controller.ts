@@ -7,6 +7,7 @@ import { ApiException } from '../common/api-exception.js';
 import type { Database } from '../db/db.js';
 import { type UserRow, bookings, helperProfiles, reviews, tasks } from '../db/schema.js';
 import { Notifier } from '../live/notifier.js';
+import { UserAuth } from '../openapi/openapi.js';
 
 const notFound = () => new ApiException(404, 'not_found', 'Job not found.');
 
@@ -64,6 +65,7 @@ export class ReviewsService {
   }
 }
 
+@UserAuth()
 @Controller('bookings')
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}

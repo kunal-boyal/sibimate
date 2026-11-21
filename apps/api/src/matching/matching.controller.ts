@@ -13,6 +13,10 @@ import {
   helperLocationSchema,
   quoteSchema,
   setAvailabilitySchema,
+  availabilitySchema,
+  nearbyTaskListSchema,
+  offerResultSchema,
+  taskOfferListSchema,
 } from '@sibimate/shared';
 import { CurrentHelper, HelperGuard } from '../bookings/helper.guard.js';
 import { ApiException } from '../common/api-exception.js';
@@ -20,11 +24,13 @@ import type { HelperProfileRow, UserRow } from '../db/schema.js';
 import { AvailabilityService } from './availability.service.js';
 import { MatchingService } from './matching.service.js';
 import { OffersService } from './offers.service.js';
+import { ApiResult, UserAuth } from '../openapi/openapi.js';
 
 const Id = (name = 'id') =>
   Param(name, new ParseUUIDPipe({ exceptionFactory: () => new ApiException(404, 'not_found', 'Task not found.') }));
 
 /** A helper's availability and the tasks they are shown. */
+@UserAuth()
 @Controller('helper')
 @UseGuards(HelperGuard)
 export class HelperMatchingController {
@@ -34,11 +40,13 @@ export class HelperMatchingController {
   ) {}
 
   @Get('availability')
+  @ApiResult(availabilitySchema)
   getAvailability(@CurrentHelper() helper: HelperProfileRow): Promise<Availability> {
     return this.availability.get(helper);
   }
 
   @Put('availability')
+  @ApiResult(availabilitySchema)
   setAvailability(
     @CurrentHelper() helper: HelperProfileRow,
     @Body({ schema: setAvailabilitySchema }) body: SetAvailability,
@@ -56,17 +64,20 @@ export class HelperMatchingController {
   }
 
   @Get('tasks/nearby')
+  @ApiResult(nearbyTaskListSchema)
   async nearby(@CurrentHelper() helper: HelperProfileRow): Promise<NearbyTaskList> {
     return { items: await this.offers.nearby(helper) };
   }
 
   @Post('tasks/:id/accept')
+  @ApiResult(offerResultSchema)
   @HttpCode(200)
   accept(@CurrentHelper() helper: HelperProfileRow, @Id() id: string): Promise<OfferResult> {
     return this.offers.accept(helper, id);
   }
 
   @Post('tasks/:id/quote')
+  @ApiResult(offerResultSchema)
   @HttpCode(200)
   quote(
     @CurrentHelper() helper: HelperProfileRow,
@@ -84,6 +95,7 @@ export class HelperMatchingController {
 }
 
 /** The customer's side: helpers' offers on their task. */
+@UserAuth()
 @Controller('tasks')
 export class TaskOffersController {
   constructor(
@@ -92,6 +104,7 @@ export class TaskOffersController {
   ) {}
 
   @Get(':id/offers')
+  @ApiResult(taskOfferListSchema)
   async list(@CurrentUser() user: UserRow, @Id() id: string): Promise<TaskOfferList> {
     return { items: await this.offers.listForCustomer(user, id) };
   }

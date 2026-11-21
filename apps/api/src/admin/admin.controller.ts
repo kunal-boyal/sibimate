@@ -47,8 +47,18 @@ import {
   type BlockCustomer,
   adminCustomerQuerySchema,
   blockCustomerSchema,
+  adminTaskListSchema,
+  helperListSchema,
+  helperSchema,
+  adminCustomerListSchema,
+  adminOverviewSchema,
+  adminDisputeListSchema,
+  adminCategoryListSchema,
+  auditListSchema,
+  platformSettingsResponseSchema,
+  helperApplicationDetailSchema,
 } from '@sibimate/shared';
-import type { z } from 'zod';
+import { z } from 'zod';
 import { BookingsService } from '../bookings/bookings.service.js';
 import { ApiException } from '../common/api-exception.js';
 import { HelpersService } from '../helpers/helpers.service.js';
@@ -61,6 +71,8 @@ import { CustomersService } from './customers.service.js';
 import { OverviewService } from './overview.service.js';
 import { AuditService } from './audit.service.js';
 import { AdminGuard, AdminRoles, CurrentAdmin } from './admin.guard.js';
+import { ApiProduces, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { AdminAuth, ApiResult } from '../openapi/openapi.js';
 
 const Uuid = (what: string) =>
   new ParseUUIDPipe({ exceptionFactory: () => new ApiException(404, 'not_found', `${what} not found.`) });
@@ -68,6 +80,7 @@ const Uuid = (what: string) =>
 /** The dashboard's routes. Every one needs a signed-in admin. */
 @Public()
 @UseGuards(AdminGuard)
+@AdminAuth()
 @Controller('admin')
 export class AdminController {
   constructor(
@@ -84,6 +97,7 @@ export class AdminController {
   ) {}
 
   @Get('tasks')
+  @ApiResult(adminTaskListSchema)
   async tasks(@Query({ schema: adminListTasksQuerySchema }) query: AdminListTasksQuery): Promise<AdminTaskList> {
     return { items: await this.bookingsService.listForAdmin(query) };
   }
@@ -115,11 +129,13 @@ export class AdminController {
   }
 
   @Get('helpers')
+  @ApiResult(helperListSchema)
   async helpers(): Promise<HelperList> {
     return { items: await this.helpersService.list() };
   }
 
   @Post('helpers')
+  @ApiResult(helperSchema, 201)
   @AdminRoles('owner', 'operations', 'verifier')
   async createHelper(
     @CurrentAdmin() admin: Admin,
@@ -133,6 +149,7 @@ export class AdminController {
   }
 
   @Get('customers')
+  @ApiResult(adminCustomerListSchema)
   async listCustomers(
     @Query({ schema: adminCustomerQuerySchema }) query: AdminCustomerQuery,
   ): Promise<AdminCustomerList> {
@@ -141,6 +158,7 @@ export class AdminController {
 
   /** Signs the person out everywhere and stops them signing in; their untaken tasks are cancelled. */
   @Post('customers/:id/block')
+  @ApiResult(z.object({ cancelledTasks: z.number().int() }))
   @HttpCode(200)
   @AdminRoles('owner', 'operations')
   async blockCustomer(
@@ -162,11 +180,14 @@ export class AdminController {
   }
 
   @Get('overview')
+  @ApiResult(adminOverviewSchema)
   getOverview(): Promise<AdminOverview> {
     return this.overview.get();
   }
 
   @Get('disputes')
+  @ApiResult(adminDisputeListSchema)
+  @ApiQuery({ name: 'status', required: false, enum: ['open', 'resolved'] })
   async listDisputes(@Query('status') status?: string): Promise<{ items: AdminDispute[] }> {
     return { items: await this.disputes.list(status === 'resolved' ? 'resolved' : 'open') };
   }
@@ -185,6 +206,7 @@ export class AdminController {
   }
 
   @Get('categories')
+  @ApiResult(adminCategoryListSchema)
   async listCategories(): Promise<{ items: AdminCategory[] }> {
     return { items: await this.categories.list() };
   }
@@ -217,18 +239,21 @@ export class AdminController {
 
   /** What admins did and which documents they opened. Owners only. */
   @Get('audit')
+  @ApiResult(auditListSchema)
   @AdminRoles('owner')
   async auditLog(): Promise<{ items: AuditEntry[] }> {
     return { items: await this.audit.recent() };
   }
 
   @Get('settings')
+  @ApiResult(platformSettingsResponseSchema)
   getSettings(): Promise<PlatformSettingsResponse> {
     return this.settings.get();
   }
 
   /** Changes the platform's rules. Owners and finance only; each change is recorded with its old value. */
   @Put('settings')
+  @ApiResult(platformSettingsResponseSchema)
   @AdminRoles('owner', 'finance')
   updateSettings(
     @CurrentAdmin() admin: Admin,
@@ -239,12 +264,15 @@ export class AdminController {
 
   /** Applications waiting for a decision, oldest first. */
   @Get('applications')
+  @ApiResult(z.object({ items: z.array(helperApplicationDetailSchema) }))
   async applications(): Promise<{ items: HelperApplicationDetail[] }> {
     return { items: await this.onboarding.applications() };
   }
 
   /** A document's image. Only owners and verifiers may open one, and every view is recorded. */
   @Get('documents/:id/file')
+  @ApiProduces('image/jpeg', 'image/png', 'image/webp')
+  @ApiResponse({ status: 200, description: 'The document photo', schema: { type: 'string', format: 'binary' } })
   @AdminRoles('owner', 'verifier')
   async document(@CurrentAdmin() admin: Admin, @Param('id', Uuid('Document')) id: string): Promise<StreamableFile> {
     const { body, contentType, helperId } = await this.onboarding.openDocument(id);

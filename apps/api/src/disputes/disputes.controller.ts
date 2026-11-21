@@ -4,7 +4,9 @@ import { type RaiseDispute, raiseDisputeSchema } from '@sibimate/shared';
 import { ApiException } from '../common/api-exception.js';
 import type { UserRow } from '../db/schema.js';
 import { DisputesService } from './disputes.service.js';
+import { UserAuth } from '../openapi/openapi.js';
 
+@UserAuth()
 @Controller('bookings')
 export class DisputesController {
   constructor(private readonly disputes: DisputesService) {}

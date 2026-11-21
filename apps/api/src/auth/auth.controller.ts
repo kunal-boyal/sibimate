@@ -13,10 +13,14 @@ import {
   otpRequestSchema,
   otpVerifySchema,
   refreshSchema,
+  otpRequestResponseSchema,
+  otpVerifyResponseSchema,
+  tokenPairSchema,
 } from '@sibimate/shared';
 import { ApiException } from '../common/api-exception.js';
 import { UsersRepository, toUser } from '../users/users.repository.js';
 import { OtpService } from './otp.service.js';
+import { ApiResult } from '../openapi/openapi.js';
 
 @Public()
 @Controller('auth')
@@ -28,12 +32,14 @@ export class AuthController {
   ) {}
 
   @Post('otp/request')
+  @ApiResult(otpRequestResponseSchema)
   @HttpCode(200)
   requestOtp(@Body({ schema: otpRequestSchema }) body: OtpRequest): Promise<OtpRequestResponse> {
     return this.otpService.request(body.phone, body.deviceId);
   }
 
   @Post('otp/verify')
+  @ApiResult(otpVerifyResponseSchema)
   @HttpCode(200)
   async verifyOtp(@Body({ schema: otpVerifySchema }) body: OtpVerify): Promise<OtpVerifyResponse> {
     await this.otpService.verify(body.phone, body.code, body.deviceId);
@@ -53,6 +59,7 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @ApiResult(tokenPairSchema)
   @HttpCode(200)
   async refresh(@Body({ schema: refreshSchema }) body: RefreshRequest): Promise<TokenPair> {
     const tokens = await this.tokenService.refresh(body.refreshToken);

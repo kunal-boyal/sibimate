@@ -61,6 +61,8 @@ pnpm test:e2e    # API tests against the local sibimate_test database
 
 After changing `apps/api/src/db/schema.ts`, run `pnpm --filter @sibimate/api db:generate` and commit the new migration.
 
+The API is described in [apps/api/openapi.json](apps/api/openapi.json), and in development you can browse it at http://localhost:3000/docs. After changing a route, run `pnpm --filter @sibimate/api openapi` and commit the file; a unit test fails while it is out of date. Request bodies and queries come from the routes' Zod schemas; give each route that returns a body an `@ApiResult(schema)`.
+
 ## API so far
 
 All routes are under `/v1`. Errors are `{ code, message, details }` with a stable `code` from `packages/shared`.
