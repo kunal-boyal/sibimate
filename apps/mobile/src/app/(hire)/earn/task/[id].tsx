@@ -122,9 +122,7 @@ export default function NearbyTaskScreen() {
         {[
           t('earn.away', { distance: formatDistance(task.distanceM) }),
           task.category,
-          task.scheduleAt
-            ? t('earn.at', { time: formatSlot(task.scheduleAt, language) })
-            : t('earn.now'),
+          task.scheduleAt ? t('earn.at', { time: formatSlot(task.scheduleAt, language) }) : t('earn.now'),
         ]
           .filter(Boolean)
           .join(' · ')}

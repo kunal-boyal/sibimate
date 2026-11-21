@@ -37,7 +37,12 @@ export default function Job() {
       setCode('');
       setGivingUp(false);
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['jobs'] }),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['jobs'] }),
+        // Cash in hand changes what the helper has earned and owes.
+        queryClient.invalidateQueries({ queryKey: ['earnings'] }),
+      ]),
   });
 
   // On the way to the customer, the helper's position is shared with them every 15 seconds.

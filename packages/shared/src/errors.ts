@@ -28,6 +28,7 @@ export const ERROR_CODES = [
   'account_busy',
   'job_clash',
   'job_under_way',
+  'dues_over_limit',
   'internal',
 ] as const;
 

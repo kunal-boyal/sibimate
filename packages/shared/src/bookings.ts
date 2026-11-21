@@ -15,8 +15,10 @@ export type HelperStatus = (typeof HELPER_STATUSES)[number];
 export const BOOKING_STATUSES = ['active', 'completed', 'cancelled'] as const;
 export type BookingStatus = (typeof BOOKING_STATUSES)[number];
 
-/** Commission on a completed task, in hundredths of a percent: 1200 is 12%. Editable per category from milestone 3. */
+/** Commission on a completed task, in hundredths of a percent: 1200 is 12%. Used until an admin sets a rate. */
 export const DEFAULT_COMMISSION_BPS = 1200;
+/** The highest commission an admin can set: 50%. */
+export const COMMISSION_MAX_BPS = 5000;
 
 /** The customer reads these codes out to the helper at the door and when the job is done. */
 export const BOOKING_CODE_LENGTH = 4;
@@ -73,6 +75,8 @@ export const helperSchema = z.object({
   cancelledCount: z.number().int(),
   /** True while the helper has a booking under way. */
   busy: z.boolean(),
+  /** Commission the helper owes from cash jobs and has not paid yet, in paise. */
+  duesOwed: z.number().int(),
   /** The average of customers' ratings, from 1 to 5, or null before the first. */
   rating: z.number().nullable(),
   ratingCount: z.number().int(),
@@ -107,6 +111,8 @@ export const adminTaskSchema = z.object({
   searchRadiusM: z.number().int(),
   status: z.enum(TASK_STATUSES),
   needsReview: z.boolean(),
+  /** The helper's booking's rate once there is one, otherwise the rate in force for its category now. */
+  commissionBps: z.number().int(),
   createdAt: z.string(),
   customer: z.object({ name: z.string().nullable(), phone: z.string() }),
   address: z.string(),
@@ -195,6 +201,68 @@ export const platformSettingsSchema = z.object({
     .max(24 * 60),
 });
 export type PlatformSettings = z.infer<typeof platformSettingsSchema>;
+
+// Earnings
+
+export const helperEarningsSchema = z.object({
+  /** What the helper kept after commission, from jobs paid today, this week (from Monday), this month and ever. */
+  today: z.number().int(),
+  week: z.number().int(),
+  month: z.number().int(),
+  total: z.number().int(),
+  jobsDone: z.number().int(),
+  /** Commission owed to Sibimate from cash jobs and not paid yet. */
+  duesOwed: z.number().int(),
+  duesLimit: z.number().int(),
+  /** Above the limit the helper is not shown cash tasks until the dues are paid. */
+  overLimit: z.boolean(),
+  /** The latest paid jobs, newest first. */
+  recent: z.array(
+    z.object({
+      bookingId: z.uuid(),
+      title: z.string(),
+      paidAt: z.string(),
+      paymentMethod: z.enum(PAYMENT_METHODS),
+      agreedPrice: z.number().int(),
+      commission: z.number().int(),
+      netAmount: z.number().int(),
+    }),
+  ),
+});
+export type HelperEarnings = z.infer<typeof helperEarningsSchema>;
+
+export const settleDuesResultSchema = z.object({ settled: z.number().int() });
+
+// Commission rates
+
+export const commissionSettingsSchema = z.object({
+  /** The rate for any category without one of its own. */
+  defaultBps: z.number().int(),
+  /** Every active category, with its own rate, or null when it uses the default. */
+  categories: z.array(z.object({ categoryId: z.uuid(), name: z.string(), rateBps: z.number().int().nullable() })),
+  /** The latest changes, newest first. A null rate on a category put it back on the default. */
+  history: z.array(
+    z.object({
+      categoryName: z.string().nullable(),
+      rateBps: z.number().int().nullable(),
+      effectiveFrom: z.string(),
+      changedBy: z.string().nullable(),
+    }),
+  ),
+});
+export type CommissionSettings = z.infer<typeof commissionSettingsSchema>;
+
+/** Sets the default rate (no category), or one category's rate; null puts the category back on the default. */
+export const setCommissionRateSchema = z
+  .object({
+    categoryId: z.uuid().nullable(),
+    rateBps: z.number().int().min(0).max(COMMISSION_MAX_BPS).nullable(),
+  })
+  .refine((value) => value.categoryId !== null || value.rateBps !== null, {
+    path: ['rateBps'],
+    message: 'The default rate needs a value',
+  });
+export type SetCommissionRate = z.infer<typeof setCommissionRateSchema>;
 
 /** A change to some of the settings. */
 export const updatePlatformSettingsSchema = platformSettingsSchema

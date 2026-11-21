@@ -2381,6 +2381,142 @@
         ]
       }
     },
+    "/v1/helper/earnings": {
+      "get": {
+        "operationId": "Bookings_getEarnings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "today": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "week": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "month": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "jobsDone": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "duesOwed": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "duesLimit": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "overLimit": {
+                      "type": "boolean"
+                    },
+                    "recent": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "bookingId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "paidAt": {
+                            "type": "string"
+                          },
+                          "paymentMethod": {
+                            "type": "string",
+                            "enum": [
+                              "upi",
+                              "cash"
+                            ]
+                          },
+                          "agreedPrice": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "commission": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "netAmount": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "bookingId",
+                          "title",
+                          "paidAt",
+                          "paymentMethod",
+                          "agreedPrice",
+                          "commission",
+                          "netAmount"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "today",
+                    "week",
+                    "month",
+                    "total",
+                    "jobsDone",
+                    "duesOwed",
+                    "duesLimit",
+                    "overLimit",
+                    "recent"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "user": []
+          }
+        ],
+        "tags": [
+          "Bookings"
+        ]
+      }
+    },
     "/v1/helper/bookings": {
       "get": {
         "operationId": "Bookings_list",
@@ -4093,6 +4229,11 @@
                           "needsReview": {
                             "type": "boolean"
                           },
+                          "commissionBps": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
                           "createdAt": {
                             "type": "string"
                           },
@@ -4152,6 +4293,7 @@
                           "searchRadiusM",
                           "status",
                           "needsReview",
+                          "commissionBps",
                           "createdAt",
                           "customer",
                           "address",
@@ -4377,6 +4519,11 @@
                           "busy": {
                             "type": "boolean"
                           },
+                          "duesOwed": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
                           "rating": {
                             "nullable": true,
                             "type": "number"
@@ -4398,6 +4545,7 @@
                           "completedCount",
                           "cancelledCount",
                           "busy",
+                          "duesOwed",
                           "rating",
                           "ratingCount"
                         ]
@@ -4547,6 +4695,11 @@
                     "busy": {
                       "type": "boolean"
                     },
+                    "duesOwed": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "rating": {
                       "nullable": true,
                       "type": "number"
@@ -4568,8 +4721,65 @@
                     "completedCount",
                     "cancelledCount",
                     "busy",
+                    "duesOwed",
                     "rating",
                     "ratingCount"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          }
+        ],
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/v1/admin/helpers/{id}/dues/settle": {
+      "post": {
+        "operationId": "Admin_settleDues",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "settled": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "settled"
                   ]
                 }
               }
@@ -5741,6 +5951,242 @@
                     "completionCodeWaitMinutes",
                     "updatedAt",
                     "updatedBy"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          }
+        ],
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/v1/admin/settings/commission": {
+      "get": {
+        "operationId": "Admin_getCommission",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "defaultBps": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "categoryId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "rateBps": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "categoryId",
+                          "name",
+                          "rateBps"
+                        ]
+                      }
+                    },
+                    "history": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "categoryName": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "rateBps": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "effectiveFrom": {
+                            "type": "string"
+                          },
+                          "changedBy": {
+                            "nullable": true,
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "categoryName",
+                          "rateBps",
+                          "effectiveFrom",
+                          "changedBy"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "defaultBps",
+                    "categories",
+                    "history"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "admin": []
+          }
+        ],
+        "tags": [
+          "Admin"
+        ]
+      },
+      "put": {
+        "operationId": "Admin_setCommission",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "categoryId": {
+                    "nullable": true,
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "rateBps": {
+                    "nullable": true,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5000
+                  }
+                },
+                "required": [
+                  "categoryId",
+                  "rateBps"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "defaultBps": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "categoryId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "rateBps": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "categoryId",
+                          "name",
+                          "rateBps"
+                        ]
+                      }
+                    },
+                    "history": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "categoryName": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "rateBps": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "effectiveFrom": {
+                            "type": "string"
+                          },
+                          "changedBy": {
+                            "nullable": true,
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "categoryName",
+                          "rateBps",
+                          "effectiveFrom",
+                          "changedBy"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "defaultBps",
+                    "categories",
+                    "history"
                   ]
                 }
               }
@@ -7384,6 +7830,7 @@
               "account_busy",
               "job_clash",
               "job_under_way",
+              "dues_over_limit",
               "internal"
             ]
           },

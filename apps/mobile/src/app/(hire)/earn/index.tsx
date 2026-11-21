@@ -36,6 +36,7 @@ export default function EarnHome() {
     refetchInterval: 30_000,
     enabled: online,
   });
+  const earnings = useQuery({ queryKey: ['earnings'], queryFn: api.getHelperEarnings, enabled: !notHelper });
   const jobs = useQuery({
     queryKey: ['jobs'],
     queryFn: api.listHelperBookings,
@@ -121,6 +122,37 @@ export default function EarnHome() {
         </Pressable>
       ) : null}
       {error ? <Notice variant="alert">{t(error)}</Notice> : null}
+      {earnings.data ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('earnings.title')}
+          onPress={() => router.push('/earn/earnings')}
+          style={({ pressed }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: space[12],
+            paddingHorizontal: space[16],
+            paddingVertical: space[14],
+            borderRadius: radius[18],
+            backgroundColor: pressed ? dark.surfaceSunken : dark.surface,
+          })}
+        >
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text variant="labelLg" color={dark.ink}>
+              {t('earnings.title')}
+            </Text>
+            <Text variant="caption" color={earnings.data.overLimit ? colors.accent : dark.inkMuted}>
+              {earnings.data.overLimit
+                ? t('earnings.overLimit', { limit: formatRupees(earnings.data.duesLimit) })
+                : t('earnings.link', { amount: formatRupees(earnings.data.week) })}
+            </Text>
+          </View>
+          <Text variant="labelLg" color={dark.inkMuted}>
+            ›
+          </Text>
+        </Pressable>
+      ) : null}
 
       {online ? (
         <>

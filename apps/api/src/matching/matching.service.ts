@@ -5,7 +5,9 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { Database } from '../db/db.js';
 import { taskOffers, tasks } from '../db/schema.js';
 import { Notifier } from '../live/notifier.js';
+import { duesOwedSql } from '../bookings/dues.js';
 import { hasClashingJob, hasOpenJob, taskTime } from '../bookings/job-clash.js';
+import { SettingsService } from '../settings/settings.service.js';
 import { ApiException } from '../common/api-exception.js';
 import { TaskStateService } from '../tasks/task-state.service.js';
 import { MatchingScheduler } from './matching-scheduler.js';
@@ -46,6 +48,7 @@ export class MatchingService {
     private readonly taskState: TaskStateService,
     private readonly scheduler: MatchingScheduler,
     private readonly notifier: Notifier,
+    private readonly settings: SettingsService,
   ) {}
 
   async runRing(taskId: string, ring: number): Promise<RingOutcome> {
@@ -153,6 +156,7 @@ export class MatchingService {
 
   /** Finds, ranks and records the helpers inside `radiusM` who have not seen the task yet, and tells them. */
   private async notify(taskId: string, ring: number, radiusM: number): Promise<number> {
+    const { cashDuesLimit: duesLimit } = await this.settings.current();
     // One statement finds, ranks and records the helpers, so two workers on the same ring cannot notify twice.
     const { rows } = await this.db.execute(sql`
       insert into task_offers (task_id, helper_id, ring, distance_m)
@@ -166,14 +170,19 @@ export class MatchingService {
         and ha.seen_at > now() - make_interval(secs => ${HELPER_SEEN_SECONDS})
         -- The verification levels are an enum in rising order.
         and hp.verification_level >= t.min_verification_level
+        -- Above the dues limit, a helper is not shown cash tasks until they pay what they owe.
+        and (t.payment_method <> 'cash' or ${duesOwedSql(sql`hp.id`)} <= ${duesLimit})
         -- A helper with a job around the same time cannot take this one; a job hours away is no bar.
         and not ${hasClashingJob(sql`hp.id`, taskTime(sql`t.schedule_at`))}
         and not exists (select 1 from task_offers o where o.task_id = t.id and o.helper_id = hp.id)
         -- Inside the search area, and inside the distance the helper is willing to travel.
         and ST_DWithin(ha.last_location, t.pickup_point, least(${radiusM}, ha.radius_m))
+      -- Nearest first, then the most reliable and best rated.
       order by
         ST_Distance(ha.last_location, t.pickup_point) / 1000.0
         + 2.0 * hp.cancelled_count / (hp.completed_count + hp.cancelled_count + 1)
+        -- Each star below five counts like half a kilometre; a helper with no ratings yet counts as 4.5.
+        + 0.5 * (5 - coalesce(hp.rating_sum::float / nullif(hp.rating_count, 0), 4.5))
         -- Helpers with no other job are told first.
         + case when ${hasOpenJob(sql`hp.id`)} then 1.0 else 0 end
       limit ${MATCHING_NOTIFY_LIMIT}

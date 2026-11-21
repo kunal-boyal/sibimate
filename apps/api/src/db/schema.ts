@@ -342,6 +342,31 @@ export const bookings = pgTable(
 
 export type BookingRow = typeof bookings.$inferSelect;
 
+/** Commission a helper owes Sibimate from a job the customer paid in cash. Settled when the helper pays it. */
+export const commissionLedger = pgTable(
+  'commission_ledger',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    helperId: uuid('helper_id')
+      .notNull()
+      .references(() => helperProfiles.id),
+    bookingId: uuid('booking_id')
+      .notNull()
+      .unique()
+      .references(() => bookings.id),
+    /** Paise. */
+    amountDue: integer('amount_due').notNull(),
+    settledAt: at('settled_at'),
+    settledBy: uuid('settled_by').references(() => adminUsers.id),
+    createdAt: at('created_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('commission_ledger_helper_open_idx')
+      .on(table.helperId)
+      .where(sql`${table.settledAt} is null`),
+  ],
+);
+
 export const offerStatusEnum = pgEnum('offer_status', OFFER_STATUSES);
 
 /** One row per helper, updated while they are online. Only the latest location is kept. */
@@ -452,6 +477,23 @@ export const reviews = pgTable(
     uniqueIndex('reviews_booking_author_idx').on(table.bookingId, table.authorId),
     index('reviews_subject_idx').on(table.subjectId),
   ],
+);
+
+/**
+ * Commission rates as they were set, newest last: a row with no category is the default,
+ * and a category's row overrides it. Rows are never changed, so they are the history.
+ */
+export const commissionRules = pgTable(
+  'commission_rules',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    categoryId: uuid('category_id').references(() => taskCategories.id, { onDelete: 'cascade' }),
+    /** Hundredths of a percent. Null on a category's row: it uses the default again. */
+    rateBps: integer('rate_bps'),
+    effectiveFrom: at('effective_from').notNull().defaultNow(),
+    changedBy: uuid('changed_by').references(() => adminUsers.id),
+  },
+  (table) => [index('commission_rules_category_idx').on(table.categoryId, table.effectiveFrom)],
 );
 
 /** The platform's editable rules: a single row, id 1. Without it, DEFAULT_PLATFORM_SETTINGS apply. */

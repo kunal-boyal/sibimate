@@ -30,6 +30,10 @@ import {
   apiErrorSchema,
   helperListSchema,
   helperSchema,
+  type CommissionSettings,
+  type SetCommissionRate,
+  commissionSettingsSchema,
+  settleDuesResultSchema,
 } from '@sibimate/shared';
 import { z } from 'zod';
 
@@ -103,6 +107,8 @@ export const api = {
   widen: (taskId: string, radiusM: number) =>
     request(`/admin/tasks/${taskId}/widen`, { method: 'POST', body: { radiusM } }),
   helpers: (): Promise<HelperList> => request('/admin/helpers', { schema: helperListSchema }),
+  settleDues: (helperId: string): Promise<{ settled: number }> =>
+    request(`/admin/helpers/${helperId}/dues/settle`, { method: 'POST', schema: settleDuesResultSchema }),
   categories: (): Promise<{ items: AdminCategory[] }> =>
     request('/admin/categories', { schema: adminCategoryListSchema }),
   approveCategory: (id: string, changes: ApproveCategory) =>
@@ -128,6 +134,10 @@ export const api = {
     request('/admin/settings', { schema: platformSettingsResponseSchema }),
   updateSettings: (changes: UpdatePlatformSettings): Promise<PlatformSettingsResponse> =>
     request('/admin/settings', { method: 'PUT', body: changes, schema: platformSettingsResponseSchema }),
+  commission: (): Promise<CommissionSettings> =>
+    request('/admin/settings/commission', { schema: commissionSettingsSchema }),
+  setCommission: (change: SetCommissionRate): Promise<CommissionSettings> =>
+    request('/admin/settings/commission', { method: 'PUT', body: change, schema: commissionSettingsSchema }),
   applications: (): Promise<{ items: HelperApplicationDetail[] }> =>
     request('/admin/applications', { schema: z.object({ items: z.array(helperApplicationDetailSchema) }) }),
   approveApplication: (id: string, verificationLevel: VerificationLevel) =>

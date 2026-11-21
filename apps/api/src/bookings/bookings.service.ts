@@ -18,6 +18,7 @@ import {
   type BookingRow,
   type HelperProfileRow,
   bookings,
+  commissionLedger,
   disputes,
   helperProfiles,
   taskCategories,
@@ -27,6 +28,7 @@ import {
 } from '../db/schema.js';
 import { TaskStateService } from '../tasks/task-state.service.js';
 import { canRaiseDispute, disputeView } from '../disputes/dispute-rules.js';
+import { commissionRateSql } from '../settings/commission-rate.js';
 import { SettingsService } from '../settings/settings.service.js';
 import { confirmHelper, helperUnavailable } from './confirm-helper.js';
 
@@ -58,6 +60,7 @@ export class BookingsService {
         category: taskCategories,
         customer: { name: users.name, phone: users.phone },
         helper: { id: helperProfiles.id, name: helperUsers.name, phone: helperUsers.phone },
+        commissionBps: sql<number>`coalesce(${bookings.commissionBps}, ${commissionRateSql(sql`${tasks.categoryId}`)})`,
       })
       .from(tasks)
       .innerJoin(users, eq(tasks.customerId, users.id))
@@ -71,7 +74,7 @@ export class BookingsService {
       .orderBy(desc(tasks.createdAt))
       .limit(100);
 
-    return rows.map(({ task, category, customer, helper }) => ({
+    return rows.map(({ task, category, customer, helper, commissionBps }) => ({
       id: task.id,
       title: task.title,
       description: task.descriptionRefined,
@@ -89,6 +92,7 @@ export class BookingsService {
       searchRadiusM: task.searchRadiusM,
       status: task.status,
       needsReview: task.needsReview,
+      commissionBps,
       createdAt: task.createdAt.toISOString(),
       customer,
       address: this.addressCipher.decrypt(task.addressEnc),
@@ -192,6 +196,11 @@ export class BookingsService {
           throw new ApiException(409, 'invalid_transition', 'This task is not paid in cash.');
         }
         await tx.update(bookings).set({ status: 'completed', paidAt: new Date() }).where(eq(bookings.id, booking.id));
+        // The customer paid the helper the whole price, so the helper owes Sibimate the commission.
+        await tx
+          .insert(commissionLedger)
+          .values({ helperId: helper.id, bookingId: booking.id, amountDue: booking.commission })
+          .onConflictDoNothing();
         await tx
           .update(helperProfiles)
           .set({ completedCount: sql`${helperProfiles.completedCount} + 1` })

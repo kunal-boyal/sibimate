@@ -3,7 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDeferredValue, useState } from 'react';
 import { api } from '../api';
 
-const date = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+const date = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
 /** Everyone who has signed in to the app, with their tasks, and blocking for accounts that misuse it. */
 export function Customers() {
@@ -180,12 +181,7 @@ function CustomerPanel({ customer }: { customer: AdminCustomer }) {
       )}
 
       {!canBlock ? null : blocked ? (
-        <button
-          type="button"
-          className="btn secondary"
-          disabled={unblock.isPending}
-          onClick={() => unblock.mutate()}
-        >
+        <button type="button" className="btn secondary" disabled={unblock.isPending} onClick={() => unblock.mutate()}>
           {unblock.isPending ? 'Unblocking…' : 'Unblock account'}
         </button>
       ) : (
@@ -203,7 +199,13 @@ function CustomerPanel({ customer }: { customer: AdminCustomer }) {
           </p>
           <label className="field">
             <span>Why are you blocking this account?</span>
-            <input value={reason} onChange={(event) => setReason(event.target.value)} minLength={5} maxLength={300} required />
+            <input
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              minLength={5}
+              maxLength={300}
+              required
+            />
           </label>
           <button className="btn danger" type="submit" disabled={reason.trim().length < 5 || block.isPending}>
             {block.isPending ? 'Blocking…' : 'Block account'}

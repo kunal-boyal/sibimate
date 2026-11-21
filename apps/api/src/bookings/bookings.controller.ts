@@ -3,6 +3,8 @@ import {
   type BookingCode,
   type HelperBooking,
   type HelperBookingList,
+  type HelperEarnings,
+  helperEarningsSchema,
   bookingCodeSchema,
   helperBookingListSchema,
   helperBookingSchema,
@@ -10,6 +12,7 @@ import {
 import { ApiException } from '../common/api-exception.js';
 import type { HelperProfileRow } from '../db/schema.js';
 import { BookingsService } from './bookings.service.js';
+import { EarningsService } from './earnings.service.js';
 import { CurrentHelper, HelperGuard } from './helper.guard.js';
 import { ApiResult, UserAuth } from '../openapi/openapi.js';
 
@@ -21,7 +24,17 @@ const Id = () =>
 @Controller()
 @UseGuards(HelperGuard)
 export class BookingsController {
-  constructor(private readonly bookingsService: BookingsService) {}
+  constructor(
+    private readonly bookingsService: BookingsService,
+    private readonly earnings: EarningsService,
+  ) {}
+
+  /** What the helper has earned, and the commission they owe from cash jobs. */
+  @Get('helper/earnings')
+  @ApiResult(helperEarningsSchema)
+  getEarnings(@CurrentHelper() helper: HelperProfileRow): Promise<HelperEarnings> {
+    return this.earnings.forHelper(helper);
+  }
 
   @Get('helper/bookings')
   @ApiResult(helperBookingListSchema)

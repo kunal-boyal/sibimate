@@ -1,11 +1,4 @@
-import {
-  type AdminTask,
-  DEFAULT_COMMISSION_BPS,
-  SEARCH_AREA_STEPS_M,
-  type TaskStatus,
-  commissionFor,
-  formatRupees,
-} from '@sibimate/shared';
+import { type AdminTask, SEARCH_AREA_STEPS_M, type TaskStatus, commissionFor, formatRupees } from '@sibimate/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api } from '../api';
@@ -189,8 +182,8 @@ function TaskPanel({ task }: { task: AdminTask }) {
           <dd>{task.helper ? `${task.helper.name ?? 'Helper'} · ${task.helper.phone}` : 'None yet'}</dd>
         </div>
         <div>
-          <dt>Commission at {DEFAULT_COMMISSION_BPS / 100}%</dt>
-          <dd>{formatRupees(commissionFor(task.customerPrice, DEFAULT_COMMISSION_BPS))}</dd>
+          <dt>Commission at {task.commissionBps / 100}%</dt>
+          <dd>{formatRupees(commissionFor(task.customerPrice, task.commissionBps))}</dd>
         </div>
         <div>
           <dt>Needs</dt>
@@ -303,7 +296,9 @@ function WidenSearch({ task }: { task: AdminTask }) {
               {widen.error.message}
             </p>
           ) : null}
-          {widen.isSuccess ? <p className="notice good">Search widened. Helpers in the new area can see the task now.</p> : null}
+          {widen.isSuccess ? (
+            <p className="notice good">Search widened. Helpers in the new area can see the task now.</p>
+          ) : null}
           <button className="btn secondary" type="submit" disabled={radiusM === '' || widen.isPending}>
             {widen.isPending ? 'Widening…' : task.status === 'expired' ? 'Search again' : 'Widen search'}
           </button>

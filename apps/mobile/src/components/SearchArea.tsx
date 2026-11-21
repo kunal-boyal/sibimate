@@ -34,7 +34,12 @@ export function SearchArea({ taskId, radiusM }: { taskId: string; radiusM: numbe
           borderColor: colors.border,
         }}
       >
-        <Step minus label={t('area.smaller')} disabled={!smaller || change.isPending} onPress={() => smaller && change.mutate(smaller)} />
+        <Step
+          minus
+          label={t('area.smaller')}
+          disabled={!smaller || change.isPending}
+          onPress={() => smaller && change.mutate(smaller)}
+        />
         <View style={{ flex: 1, alignItems: 'center' }}>
           <Text variant="caption" color={colors.inkMuted}>
             {t('area.label')}
@@ -43,14 +48,28 @@ export function SearchArea({ taskId, radiusM }: { taskId: string; radiusM: numbe
             {formatDistance(radiusM)}
           </Text>
         </View>
-        <Step label={t('area.larger')} disabled={!larger || change.isPending} onPress={() => larger && change.mutate(larger)} />
+        <Step
+          label={t('area.larger')}
+          disabled={!larger || change.isPending}
+          onPress={() => larger && change.mutate(larger)}
+        />
       </View>
       {change.isError ? <Notice variant="alert">{t(errorKey(change.error))}</Notice> : null}
     </View>
   );
 }
 
-function Step({ label, minus, disabled, onPress }: { label: string; minus?: boolean; disabled: boolean; onPress: () => void }) {
+function Step({
+  label,
+  minus,
+  disabled,
+  onPress,
+}: {
+  label: string;
+  minus?: boolean;
+  disabled: boolean;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       accessibilityRole="button"

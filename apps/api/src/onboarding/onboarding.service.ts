@@ -163,7 +163,9 @@ export class OnboardingService {
         .where(eq(helperDocuments.helperId, helperId));
       await tx
         .update(users)
-        .set({ roles: sql`array(select distinct unnest(${users.roles} || 'helper'::user_role))` })
+        .set({
+          roles: sql`array(select distinct role from unnest(${users.roles} || 'helper'::user_role) as role order by role)`,
+        })
         .where(eq(users.id, profile.userId));
     });
     await this.notifier.profileChanged(profile.userId);

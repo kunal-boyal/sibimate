@@ -14,6 +14,7 @@ import { SmsSender } from '../src/auth/sms-sender.js';
 import { CODE_RULES } from '../src/bookings/bookings.service.js';
 import type { Database } from '../src/db/db.js';
 import { MatchingScheduler } from '../src/matching/matching-scheduler.js';
+import { MatchingService } from '../src/matching/matching.service.js';
 
 class FakeSmsSender extends SmsSender {
   lastCode = '';
@@ -40,6 +41,7 @@ describe('A task from posting to paid (e2e)', () => {
   const as = (token: string) => ({
     get: (path: string) => http().get(`/v1${path}`).set('Authorization', `Bearer ${token}`),
     post: (path: string, body?: object) => http().post(`/v1${path}`).set('Authorization', `Bearer ${token}`).send(body),
+    put: (path: string, body?: object) => http().put(`/v1${path}`).set('Authorization', `Bearer ${token}`).send(body),
   });
   const currentCode = () => totpCode(totpSecret, totpStep(new Date()));
   const login = (overrides: object = {}) =>
@@ -417,6 +419,82 @@ describe('A task from posting to paid (e2e)', () => {
       await as(ravi).get(`/helper/bookings/${bookingId}`).expect(404);
       await as(ravi).post(`/bookings/${bookingId}/en-route`).expect(404);
       expect((await as(ravi).get('/helper/bookings').expect(200)).body.items).toEqual([]);
+    });
+  });
+
+  describe('cash commission', () => {
+    /** Runs a job paid in cash from posting to cash in hand. */
+    async function cashJob(customerPrice: number) {
+      const taskId = await postTask(customer, { customerPrice });
+      await assign(taskId).expect(204);
+      const { booking } = await task(taskId);
+      await as(helper).post(`/bookings/${booking.id}/en-route`).expect(200);
+      await as(helper).post(`/bookings/${booking.id}/start`, { code: booking.startCode }).expect(200);
+      const working = await task(taskId);
+      await as(helper).post(`/bookings/${booking.id}/complete`, { code: working.booking.completionCode }).expect(200);
+      await as(helper).post(`/bookings/${booking.id}/payment/cash-received`).expect(200);
+    }
+    const earnings = async () => (await as(helper).get('/helper/earnings').expect(200)).body;
+
+    it('records what a helper owes from cash jobs, stops cash tasks above the limit, and settles', async () => {
+      expect(await earnings()).toMatchObject({
+        total: 0,
+        jobsDone: 0,
+        duesOwed: 0,
+        duesLimit: 50000,
+        overLimit: false,
+      });
+
+      // ₹3,000 at 12%: the helper kept ₹2,640 and owes ₹360, under the ₹500 limit.
+      await cashJob(300000);
+      expect(await earnings()).toMatchObject({
+        today: 264000,
+        week: 264000,
+        month: 264000,
+        total: 264000,
+        jobsDone: 1,
+        duesOwed: 36000,
+        overLimit: false,
+        recent: [{ title: 'Carry two suitcases', paymentMethod: 'cash', agreedPrice: 300000, commission: 36000 }],
+      });
+
+      // Another ₹2,000 takes the dues to ₹600, over the limit.
+      await cashJob(200000);
+      expect(await earnings()).toMatchObject({ total: 440000, jobsDone: 2, duesOwed: 60000, overLimit: true });
+      const listed = (await as(admin).get('/admin/helpers').expect(200)).body.items;
+      expect(listed.find((item: { id: string }) => item.id === helperId).duesOwed).toBe(60000);
+
+      // Over the limit, the helper is not shown cash tasks, and cannot take one they were shown before.
+      await as(helper)
+        .put('/helper/availability', { isOnline: true, location: { lat: 26.851, lng: 75.763 } })
+        .expect(200);
+      const next = await postTask();
+      expect(await app.get(MatchingService).runRing(next, 0)).toEqual({ notified: 0 });
+      await db.execute(sql`insert into task_offers (task_id, helper_id, ring) values (${next}, ${helperId}, 0)`);
+      const refused = await as(helper).post(`/helper/tasks/${next}/accept`).expect(409);
+      expect(refused.body.code).toBe('dues_over_limit');
+
+      // Paying up: only owners and finance record it.
+      await as(admin).post(`/admin/helpers/${helperId}/dues/settle`).expect(403);
+      const { totpSecret: secret } = await app
+        .get(AdminAuthService)
+        .upsertAdmin('finance@sibimate.test', ADMIN.password, 'finance');
+      const finance = (
+        await http()
+          .post('/v1/admin/auth/login')
+          .send({
+            email: 'finance@sibimate.test',
+            password: ADMIN.password,
+            code: totpCode(secret, totpStep(new Date())),
+          })
+          .expect(200)
+      ).body.token as string;
+      expect((await as(finance).post(`/admin/helpers/${helperId}/dues/settle`).expect(200)).body).toEqual({
+        settled: 60000,
+      });
+      await as(finance).post(`/admin/helpers/${helperId}/dues/settle`).expect(409);
+      expect(await earnings()).toMatchObject({ duesOwed: 0, overLimit: false, total: 440000 });
+      await as(helper).post(`/helper/tasks/${next}/accept`).expect(200);
     });
   });
 });

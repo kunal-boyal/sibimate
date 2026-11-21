@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
 import { getDrizzleToken } from '@nestjs/drizzle';
 import { Test } from '@nestjs/testing';
-import { MATCHING_RINGS } from '@sibimate/shared';
+import { MATCHING_NOTIFY_LIMIT, MATCHING_RINGS } from '@sibimate/shared';
 import { sql } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import request from 'supertest';
@@ -226,6 +226,22 @@ describe('Matching and offers (e2e)', () => {
       await as(silent.token).put('/helper/location', north(0.4)).expect(204);
       expect(await matching.runRing(taskId, 1)).toEqual({ notified: 1 });
       expect(await nearby(silent.token)).toHaveLength(1);
+    });
+
+    it('tells the best rated first when more helpers are near than one ring tells', async () => {
+      const helpers = [];
+      for (let i = 0; i < MATCHING_NOTIFY_LIMIT + 1; i++) {
+        helpers.push(await helperAt(1, `Helper ${i}`));
+      }
+      // Same place and record; one has poor ratings, one has none yet.
+      const poor = helpers[0]!;
+      await db.execute(sql`update helper_profiles set rating_sum = 4, rating_count = 2 where id = ${poor.id}`);
+      await db.execute(sql`update helper_profiles set rating_sum = 50, rating_count = 10 where id <> ${poor.id}`);
+      await db.execute(sql`update helper_profiles set rating_sum = 0, rating_count = 0 where id = ${helpers[1]!.id}`);
+      const taskId = await postTask();
+      expect(await matching.runRing(taskId, 0)).toEqual({ notified: MATCHING_NOTIFY_LIMIT });
+      expect(await nearby(poor.token)).toHaveLength(0);
+      expect(await nearby(helpers[1]!.token)).toHaveLength(1);
     });
 
     it('shows a task only to helpers verified to the level it needs', async () => {
@@ -561,6 +577,54 @@ describe('Matching and offers (e2e)', () => {
       const next = await postTask({ title: 'Next now' });
       await matching.runRing(next, 0);
       expect(ids(await nearby(helper.token))).toEqual([next]);
+    });
+  });
+
+  describe('commission rates', () => {
+    const commission = async () => (await as(admin).get('/admin/settings/commission').expect(200)).body;
+    const errandId = async () =>
+      String((await db.execute(sql`select id from task_categories where slug = 'errand'`)).rows[0]!.id);
+
+    it('applies the default or a category rate to new bookings, and keeps each booking at its rate', async () => {
+      expect(await commission()).toMatchObject({ defaultBps: 1200, history: [] });
+      const errand = await errandId();
+      const operations = await adminWithRole('operations');
+      await as(operations).put('/admin/settings/commission', { categoryId: null, rateBps: 1500 }).expect(403);
+      await as(admin).put('/admin/settings/commission', { categoryId: null, rateBps: null }).expect(400);
+      await as(admin).put('/admin/settings/commission', { categoryId: null, rateBps: 6000 }).expect(400);
+
+      await as(admin).put('/admin/settings/commission', { categoryId: null, rateBps: 1500 }).expect(200);
+      const set = await as(admin).put('/admin/settings/commission', { categoryId: errand, rateBps: 800 }).expect(200);
+      expect(set.body.defaultBps).toBe(1500);
+      expect(set.body.categories.find((item: { categoryId: string }) => item.categoryId === errand).rateBps).toBe(800);
+      expect(set.body.history.map((row: { rateBps: number }) => row.rateBps)).toEqual([800, 1500]);
+
+      // The helper sees the rate that would apply before taking the task.
+      const helper = await helperAt(1, 'Aman');
+      const plain = await postTask({ title: 'Plain' });
+      const errandTask = await postTask({ title: 'Errand' });
+      await db.execute(sql`update tasks set category_id = ${errand} where id = ${errandTask}`);
+      await matching.runRing(plain, 0);
+      await matching.runRing(errandTask, 0);
+      const shown = await nearby(helper.token);
+      const rateOf = (id: string) => shown.find((item: { id: string }) => item.id === id);
+      expect(rateOf(plain)).toMatchObject({ commissionBps: 1500, netAtCustomerPrice: 15000 - 2250 });
+      expect(rateOf(errandTask)).toMatchObject({ commissionBps: 800, netAtCustomerPrice: 15000 - 1200 });
+
+      // Taking it copies the rate to the booking; a later change does not touch it.
+      await as(helper.token).post(`/helper/tasks/${errandTask}/accept`).expect(200);
+      await as(admin).put('/admin/settings/commission', { categoryId: errand, rateBps: null }).expect(200);
+      const [job] = (await as(helper.token).get('/helper/bookings').expect(200)).body.items;
+      expect(job).toMatchObject({ commission: 1200, netAmount: 13800 });
+      const tasks = (await as(admin).get('/admin/tasks?status=all').expect(200)).body.items;
+      expect(tasks.find((item: { id: string }) => item.id === errandTask).commissionBps).toBe(800);
+      // Back on the default, the next errand gets 15%.
+      expect(
+        (await commission()).categories.find((item: { categoryId: string }) => item.categoryId === errand).rateBps,
+      ).toBeNull();
+
+      const audit = (await as(admin).get('/admin/audit').expect(200)).body.items;
+      expect(audit.filter((row: { action: string }) => row.action === 'commission.change')).toHaveLength(3);
     });
   });
 

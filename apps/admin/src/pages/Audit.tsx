@@ -12,6 +12,8 @@ const ACTIONS: Record<string, string> = {
   'document.view': 'Opened a document',
   'dispute.resolve': 'Decided a dispute',
   'settings.update': 'Changed settings',
+  'commission.change': 'Changed a commission rate',
+  'dues.settle': 'Recorded cash dues paid',
   'category.approve': 'Approved a category',
   'category.merge': 'Merged a category',
 };

@@ -1,4 +1,4 @@
-import { SKILL_TAGS, VERIFICATION_LEVELS, normalizeIndianMobile } from '@sibimate/shared';
+import { type Helper, SKILL_TAGS, VERIFICATION_LEVELS, formatRupees, normalizeIndianMobile } from '@sibimate/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { api } from '../api';
@@ -8,6 +8,13 @@ export function Helpers() {
   const queryClient = useQueryClient();
   const helpers = useQuery({ queryKey: ['helpers'], queryFn: api.helpers, refetchInterval: 30_000 });
   const [phoneError, setPhoneError] = useState<string | null>(null);
+  const me = useQuery({ queryKey: ['me'], queryFn: api.me });
+  const settings = useQuery({ queryKey: ['settings'], queryFn: api.settings });
+  const canSettle = me.data?.role === 'owner' || me.data?.role === 'finance';
+  const settle = useMutation({
+    mutationFn: (helper: Helper) => api.settleDues(helper.id).then((result) => ({ ...result, helper })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['helpers'] }),
+  });
   const create = useMutation({
     mutationFn: api.createHelper,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['helpers'] }),
@@ -50,6 +57,17 @@ export function Helpers() {
 
       <Applications />
 
+      {settle.isSuccess ? (
+        <p className="notice good">
+          Recorded {formatRupees(settle.data.settled)} paid by {settle.data.helper.name ?? settle.data.helper.phone}.
+        </p>
+      ) : null}
+      {settle.isError ? (
+        <p className="notice alert" role="alert">
+          {settle.error.message}
+        </p>
+      ) : null}
+
       <div className="split">
         <section className="card table" aria-label="Helpers">
           <table>
@@ -59,6 +77,7 @@ export function Helpers() {
                 <th scope="col">Work</th>
                 <th scope="col">Verified to</th>
                 <th scope="col">Jobs done</th>
+                <th scope="col">Cash dues</th>
                 <th scope="col">Now</th>
               </tr>
             </thead>
@@ -83,6 +102,41 @@ export function Helpers() {
                     {helper.cancelledCount ? <span className="muted"> · {helper.cancelledCount} given up</span> : null}
                   </td>
                   <td>
+                    {helper.duesOwed === 0 ? (
+                      <span className="muted">None</span>
+                    ) : (
+                      <div className="stack" style={{ gap: 4, alignItems: 'flex-start' }}>
+                        <span>
+                          {formatRupees(helper.duesOwed)}
+                          {settings.data && helper.duesOwed > settings.data.cashDuesLimit ? (
+                            <span className="pill alert" style={{ marginLeft: 6 }}>
+                              Over limit
+                            </span>
+                          ) : null}
+                        </span>
+                        {canSettle ? (
+                          <button
+                            type="button"
+                            className="btn secondary"
+                            disabled={settle.isPending}
+                            aria-label={`Record that ${helper.name ?? helper.phone} paid ${formatRupees(helper.duesOwed)}`}
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `Record that ${helper.name ?? helper.phone} paid ${formatRupees(helper.duesOwed)}?`,
+                                )
+                              ) {
+                                settle.mutate(helper);
+                              }
+                            }}
+                          >
+                            Record payment
+                          </button>
+                        ) : null}
+                      </div>
+                    )}
+                  </td>
+                  <td>
                     {helper.status !== 'active' ? (
                       <span className="pill done" style={{ textTransform: 'capitalize' }}>
                         {helper.status}
@@ -97,7 +151,7 @@ export function Helpers() {
               ))}
               {helpers.isSuccess && items.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="muted" style={{ textAlign: 'left', padding: '20px 0' }}>
+                  <td colSpan={6} className="muted" style={{ textAlign: 'left', padding: '20px 0' }}>
                     No helpers yet. Add the first one with the form.
                   </td>
                 </tr>

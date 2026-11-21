@@ -30,6 +30,11 @@ import {
   type ResolveDispute,
   resolveDisputeSchema,
   type PlatformSettingsResponse,
+  type CommissionSettings,
+  type SetCommissionRate,
+  commissionSettingsSchema,
+  setCommissionRateSchema,
+  settleDuesResultSchema,
   type UpdatePlatformSettings,
   updatePlatformSettingsSchema,
   type RejectHelper,
@@ -60,10 +65,12 @@ import {
 } from '@sibimate/shared';
 import { z } from 'zod';
 import { BookingsService } from '../bookings/bookings.service.js';
+import { EarningsService } from '../bookings/earnings.service.js';
 import { ApiException } from '../common/api-exception.js';
 import { HelpersService } from '../helpers/helpers.service.js';
 import { MatchingService } from '../matching/matching.service.js';
 import { OnboardingService } from '../onboarding/onboarding.service.js';
+import { CommissionService } from '../settings/commission.service.js';
 import { SettingsService } from '../settings/settings.service.js';
 import { DisputesService } from '../disputes/disputes.service.js';
 import { CategoriesService } from './categories.service.js';
@@ -89,6 +96,8 @@ export class AdminController {
     private readonly onboarding: OnboardingService,
     private readonly audit: AuditService,
     private readonly settings: SettingsService,
+    private readonly commission: CommissionService,
+    private readonly earnings: EarningsService,
     private readonly disputes: DisputesService,
     private readonly overview: OverviewService,
     private readonly categories: CategoriesService,
@@ -146,6 +155,18 @@ export class AdminController {
       verificationLevel: helper.verificationLevel,
     });
     return helper;
+  }
+
+  /** Records that a helper paid all the commission they owed from cash jobs. Owners and finance only. */
+  @Post('helpers/:id/dues/settle')
+  @HttpCode(200)
+  @ApiResult(settleDuesResultSchema)
+  @AdminRoles('owner', 'finance')
+  async settleDues(
+    @CurrentAdmin() admin: Admin,
+    @Param('id', Uuid('Helper')) id: string,
+  ): Promise<{ settled: number }> {
+    return { settled: await this.earnings.settle(admin, id) };
   }
 
   @Get('customers')
@@ -260,6 +281,23 @@ export class AdminController {
     @Body({ schema: updatePlatformSettingsSchema }) body: UpdatePlatformSettings,
   ): Promise<PlatformSettingsResponse> {
     return this.settings.update(admin, body);
+  }
+
+  @Get('settings/commission')
+  @ApiResult(commissionSettingsSchema)
+  getCommission(): Promise<CommissionSettings> {
+    return this.commission.get();
+  }
+
+  /** Sets the default commission rate or one category's. Applies to bookings confirmed from now on. */
+  @Put('settings/commission')
+  @ApiResult(commissionSettingsSchema)
+  @AdminRoles('owner', 'finance')
+  setCommission(
+    @CurrentAdmin() admin: Admin,
+    @Body({ schema: setCommissionRateSchema }) body: SetCommissionRate,
+  ): Promise<CommissionSettings> {
+    return this.commission.set(admin, body);
   }
 
   /** Applications waiting for a decision, oldest first. */

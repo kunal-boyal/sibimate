@@ -12,6 +12,7 @@ import {
   type TaskOfferList,
   type HelperBooking,
   type HelperBookingList,
+  type HelperEarnings,
   type Task,
   type TaskInterpretation,
   type TaskList,
@@ -26,6 +27,7 @@ import {
   otpRequestResponseSchema,
   availabilitySchema,
   helperBookingListSchema,
+  helperEarningsSchema,
   helperProfileResponseSchema,
   helperProfileSchema,
   nearbyTaskListSchema,
@@ -232,6 +234,9 @@ export function createApiClient(options: ApiClientOptions) {
 
     listHelperBookings: (): Promise<HelperBookingList> =>
       request('/helper/bookings', { schema: helperBookingListSchema }),
+
+    /** What the helper has earned, and the commission they owe from cash jobs. */
+    getHelperEarnings: (): Promise<HelperEarnings> => request('/helper/earnings', { schema: helperEarningsSchema }),
 
     getHelperBooking: (id: string): Promise<HelperBooking> =>
       request(`/helper/bookings/${id}`, { schema: helperBookingSchema }),

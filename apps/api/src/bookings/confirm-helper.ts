@@ -1,8 +1,9 @@
-import { DEFAULT_COMMISSION_BPS, JOB_GAP_MINUTES, VERIFICATION_LEVELS, commissionFor } from '@sibimate/shared';
+import { JOB_GAP_MINUTES, VERIFICATION_LEVELS, commissionFor } from '@sibimate/shared';
 import { and, eq, inArray, ne, sql } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception.js';
 import { type HelperProfileRow, type TaskRow, bookings, helperProfiles, taskOffers } from '../db/schema.js';
 import type { Transaction } from '../tasks/task-state.service.js';
+import { commissionRateSql } from '../settings/commission-rate.js';
 import { hasClashingJob, taskTime } from './job-clash.js';
 
 export const helperUnavailable = (message: string) => new ApiException(409, 'helper_unavailable', message);
@@ -36,14 +37,20 @@ export async function confirmHelper(tx: Transaction, task: TaskRow, helper: Help
     throw new ApiException(409, 'job_clash', 'This helper already has a job around that time.');
   }
 
+  // The rate in force now is copied to the booking, so later changes never alter it.
+  const {
+    rows: [rate],
+  } = await tx.execute<{ bps: number }>(sql`select ${commissionRateSql(sql`${task.categoryId}::uuid`)} as bps`);
+  const commissionBps = rate!.bps;
+
   const [booking] = await tx
     .insert(bookings)
     .values({
       taskId: task.id,
       helperId: helper.id,
       agreedPrice: price,
-      commissionBps: DEFAULT_COMMISSION_BPS,
-      commission: commissionFor(price, DEFAULT_COMMISSION_BPS),
+      commissionBps,
+      commission: commissionFor(price, commissionBps),
     })
     .returning({ id: bookings.id });
 

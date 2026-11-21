@@ -66,7 +66,11 @@ export function WhenPicker({ value, onChange }: { value: When; onChange: (value:
         label={t('when.label')}
         value={value.later ? 'later' : 'now'}
         onChange={(choice) =>
-          onChange(choice === 'now' ? { later: false, day: null, slot: null } : { later: true, day: openDays[0] ?? null, slot: null })
+          onChange(
+            choice === 'now'
+              ? { later: false, day: null, slot: null }
+              : { later: true, day: openDays[0] ?? null, slot: null },
+          )
         }
         options={[
           { value: 'now', label: t('when.now') },

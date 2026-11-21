@@ -3,6 +3,7 @@ import { InjectDrizzle } from '@nestjs/drizzle';
 import type { Helper, createHelperSchema } from '@sibimate/shared';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import type { z } from 'zod';
+import { duesOwedSql } from '../bookings/dues.js';
 import type { Database } from '../db/db.js';
 import { type HelperProfileRow, bookings, helperProfiles, users } from '../db/schema.js';
 
@@ -25,7 +26,7 @@ export class HelpersService {
         .set({
           // Keeps a name the person chose themselves.
           name: sql`coalesce(${users.name}, ${input.name})`,
-          roles: sql`array(select distinct unnest(${users.roles} || 'helper'::user_role))`,
+          roles: sql`array(select distinct role from unnest(${users.roles} || 'helper'::user_role) as role order by role)`,
         })
         .where(eq(users.phone, input.phone))
         .returning({ id: users.id });
@@ -53,11 +54,12 @@ export class HelpersService {
         name: users.name,
         phone: users.phone,
         busy: sql<boolean>`exists (select 1 from ${bookings} where ${bookings.helperId} = ${helperProfiles.id} and ${bookings.status} = 'active')`,
+        duesOwed: duesOwedSql(sql`${helperProfiles.id}`),
       })
       .from(helperProfiles)
       .innerJoin(users, eq(helperProfiles.userId, users.id))
       .orderBy(desc(helperProfiles.createdAt));
-    return rows.map(({ profile, name, phone, busy }) => ({
+    return rows.map(({ profile, name, phone, busy, duesOwed }) => ({
       id: profile.id,
       phone,
       name,
@@ -68,6 +70,7 @@ export class HelpersService {
       completedCount: profile.completedCount,
       cancelledCount: profile.cancelledCount,
       busy,
+      duesOwed,
       rating: profile.ratingCount > 0 ? Math.round((profile.ratingSum / profile.ratingCount) * 10) / 10 : null,
       ratingCount: profile.ratingCount,
     }));

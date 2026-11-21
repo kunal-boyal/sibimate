@@ -1,15 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDrizzle } from '@nestjs/drizzle';
-import {
-  DEFAULT_COMMISSION_BPS,
-  type NearbyTask,
-  type OfferResult,
-  type Quote,
-  type TaskOffer,
-  commissionFor,
-} from '@sibimate/shared';
-import { and, asc, desc, eq, inArray } from 'drizzle-orm';
+import { type NearbyTask, type OfferResult, type Quote, type TaskOffer, commissionFor } from '@sibimate/shared';
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { confirmHelper } from '../bookings/confirm-helper.js';
+import { duesOwedSql } from '../bookings/dues.js';
 import { ApiException } from '../common/api-exception.js';
 import type { Database } from '../db/db.js';
 import {
@@ -24,6 +18,8 @@ import {
   users,
 } from '../db/schema.js';
 import { Notifier } from '../live/notifier.js';
+import { commissionRateSql } from '../settings/commission-rate.js';
+import { SettingsService } from '../settings/settings.service.js';
 import { TaskStateService } from '../tasks/task-state.service.js';
 
 const OPEN = ['notified', 'quoted'] as const;
@@ -37,6 +33,7 @@ export class OffersService {
     @InjectDrizzle() private readonly db: Database,
     private readonly taskState: TaskStateService,
     private readonly notifier: Notifier,
+    private readonly settings: SettingsService,
   ) {}
 
   // Helper
@@ -44,7 +41,12 @@ export class OffersService {
   /** The tasks this helper has been shown and can still take. The exact address is never included. */
   async nearby(helper: HelperProfileRow): Promise<NearbyTask[]> {
     const rows = await this.db
-      .select({ offer: taskOffers, task: tasks, category: taskCategories.name })
+      .select({
+        offer: taskOffers,
+        task: tasks,
+        category: taskCategories.name,
+        commissionBps: commissionRateSql(sql`${tasks.categoryId}`),
+      })
       .from(taskOffers)
       .innerJoin(tasks, eq(taskOffers.taskId, tasks.id))
       .leftJoin(taskCategories, eq(tasks.categoryId, taskCategories.id))
@@ -53,7 +55,7 @@ export class OffersService {
       )
       .orderBy(desc(taskOffers.createdAt))
       .limit(30);
-    return rows.map(({ offer, task, category }) => ({
+    return rows.map(({ offer, task, category, commissionBps }) => ({
       id: task.id,
       title: task.title,
       description: task.descriptionRefined,
@@ -64,8 +66,8 @@ export class OffersService {
       paymentMethod: task.paymentMethod,
       distanceM: offer.distanceM ?? 0,
       customerPrice: task.customerPrice,
-      netAtCustomerPrice: task.customerPrice - commissionFor(task.customerPrice, DEFAULT_COMMISSION_BPS),
-      commissionBps: DEFAULT_COMMISSION_BPS,
+      netAtCustomerPrice: task.customerPrice - commissionFor(task.customerPrice, commissionBps),
+      commissionBps,
       instant: !task.requiresSkilled,
       myOffer: offer.status === 'quoted' && offer.price !== null ? { price: offer.price, etaMin: offer.etaMin } : null,
       createdAt: offer.createdAt.toISOString(),
@@ -202,6 +204,19 @@ export class OffersService {
     }
     if (row.task.status !== 'matching' || !OPEN.some((status) => status === row.offer.status)) {
       throw gone('This task is no longer available.');
+    }
+    if (row.task.paymentMethod === 'cash') {
+      const { cashDuesLimit } = await this.settings.current();
+      const [dues] = await this.db
+        .execute<{ owed: number }>(sql`select ${duesOwedSql(sql`${helper.id}::uuid`)} as owed`)
+        .then((result) => result.rows);
+      if (dues!.owed > cashDuesLimit) {
+        throw new ApiException(
+          409,
+          'dues_over_limit',
+          'Pay the commission you owe from cash jobs to take cash tasks again.',
+        );
+      }
     }
     return row;
   }
