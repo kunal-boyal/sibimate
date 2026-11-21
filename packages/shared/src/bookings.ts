@@ -101,6 +101,8 @@ export const adminTaskSchema = z.object({
   customerPrice: z.number().int(),
   paymentMethod: z.enum(PAYMENT_METHODS),
   scheduleAt: z.string().nullable(),
+  /** How far the search for a helper reaches now, in metres. */
+  searchRadiusM: z.number().int(),
   status: z.enum(TASK_STATUSES),
   needsReview: z.boolean(),
   createdAt: z.string(),

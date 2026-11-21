@@ -30,6 +30,8 @@ export interface TaskTransition {
 
 /** States a customer can still cancel from: everything before the work starts. */
 const CANCELLABLE = ['draft', 'posted', 'matching', 'assigned', 'en_route'] as const;
+/** States an admin can cancel from: no helper has the task yet, so nobody else is affected. */
+const ADMIN_CANCELLABLE: readonly TaskStatus[] = ['posted', 'matching', 'expired'];
 
 export const TASK_TRANSITIONS: readonly TaskTransition[] = [
   { from: 'draft', to: 'posted', actors: ['customer'] },
@@ -40,7 +42,7 @@ export const TASK_TRANSITIONS: readonly TaskTransition[] = [
   // No helper was found: the customer posts it again, or an admin does, or an admin assigns one by hand.
   { from: 'expired', to: 'matching', actors: ['customer', 'admin'] },
   { from: 'expired', to: 'assigned', actors: ['admin'] },
-  { from: 'expired', to: 'cancelled', actors: ['customer'] },
+  { from: 'expired', to: 'cancelled', actors: ['customer', 'admin'] },
   { from: 'assigned', to: 'en_route', actors: ['helper'] },
   { from: 'en_route', to: 'in_progress', actors: ['helper'] },
   { from: 'in_progress', to: 'completed', actors: ['helper'] },
@@ -50,7 +52,13 @@ export const TASK_TRANSITIONS: readonly TaskTransition[] = [
   // The helper cancels and the task is matched again.
   { from: 'assigned', to: 'matching', actors: ['helper'] },
   { from: 'en_route', to: 'matching', actors: ['helper'] },
-  ...CANCELLABLE.map((from) => ({ from, to: 'cancelled', actors: ['customer'] }) as const),
+  ...CANCELLABLE.map(
+    (from): TaskTransition => ({
+      from,
+      to: 'cancelled',
+      actors: ADMIN_CANCELLABLE.includes(from) ? ['customer', 'admin'] : ['customer'],
+    }),
+  ),
   // A customer who will not give the completion code: the helper asks an admin to step in.
   { from: 'in_progress', to: 'disputed', actors: ['helper'] },
   { from: 'completed', to: 'disputed', actors: ['customer', 'helper'] },

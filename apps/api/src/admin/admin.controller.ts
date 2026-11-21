@@ -40,15 +40,24 @@ import {
   adminListTasksQuerySchema,
   assignHelperSchema,
   createHelperSchema,
+  type SearchArea,
+  searchAreaSchema,
+  type AdminCustomerList,
+  type AdminCustomerQuery,
+  type BlockCustomer,
+  adminCustomerQuerySchema,
+  blockCustomerSchema,
 } from '@sibimate/shared';
 import type { z } from 'zod';
 import { BookingsService } from '../bookings/bookings.service.js';
 import { ApiException } from '../common/api-exception.js';
 import { HelpersService } from '../helpers/helpers.service.js';
+import { MatchingService } from '../matching/matching.service.js';
 import { OnboardingService } from '../onboarding/onboarding.service.js';
 import { SettingsService } from '../settings/settings.service.js';
 import { DisputesService } from '../disputes/disputes.service.js';
 import { CategoriesService } from './categories.service.js';
+import { CustomersService } from './customers.service.js';
 import { OverviewService } from './overview.service.js';
 import { AuditService } from './audit.service.js';
 import { AdminGuard, AdminRoles, CurrentAdmin } from './admin.guard.js';
@@ -70,6 +79,8 @@ export class AdminController {
     private readonly disputes: DisputesService,
     private readonly overview: OverviewService,
     private readonly categories: CategoriesService,
+    private readonly matching: MatchingService,
+    private readonly customers: CustomersService,
   ) {}
 
   @Get('tasks')
@@ -90,6 +101,19 @@ export class AdminController {
     await this.audit.record(admin, 'task.assign', 'task', id, { helperId: body.helperId });
   }
 
+  /** Searches further for a task no helper has taken, including one that expired. */
+  @Post('tasks/:id/widen')
+  @HttpCode(204)
+  @AdminRoles('owner', 'operations')
+  async widen(
+    @CurrentAdmin() admin: Admin,
+    @Param('id', Uuid('Task')) id: string,
+    @Body({ schema: searchAreaSchema }) body: SearchArea,
+  ): Promise<void> {
+    await this.matching.widenForAdmin(id, body.radiusM, admin.id);
+    await this.audit.record(admin, 'task.widen', 'task', id, { radiusM: body.radiusM });
+  }
+
   @Get('helpers')
   async helpers(): Promise<HelperList> {
     return { items: await this.helpersService.list() };
@@ -106,6 +130,35 @@ export class AdminController {
       verificationLevel: helper.verificationLevel,
     });
     return helper;
+  }
+
+  @Get('customers')
+  async listCustomers(
+    @Query({ schema: adminCustomerQuerySchema }) query: AdminCustomerQuery,
+  ): Promise<AdminCustomerList> {
+    return { items: await this.customers.list(query) };
+  }
+
+  /** Signs the person out everywhere and stops them signing in; their untaken tasks are cancelled. */
+  @Post('customers/:id/block')
+  @HttpCode(200)
+  @AdminRoles('owner', 'operations')
+  async blockCustomer(
+    @CurrentAdmin() admin: Admin,
+    @Param('id', Uuid('Customer')) id: string,
+    @Body({ schema: blockCustomerSchema }) body: BlockCustomer,
+  ): Promise<{ cancelledTasks: number }> {
+    const result = await this.customers.block(id, body.reason, admin.id);
+    await this.audit.record(admin, 'user.block', 'user', id, { reason: body.reason, ...result });
+    return result;
+  }
+
+  @Post('customers/:id/unblock')
+  @HttpCode(204)
+  @AdminRoles('owner', 'operations')
+  async unblockCustomer(@CurrentAdmin() admin: Admin, @Param('id', Uuid('Customer')) id: string): Promise<void> {
+    await this.customers.unblock(id);
+    await this.audit.record(admin, 'user.unblock', 'user', id, {});
   }
 
   @Get('overview')

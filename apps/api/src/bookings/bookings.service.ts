@@ -85,6 +85,7 @@ export class BookingsService {
       customerPrice: task.customerPrice,
       paymentMethod: task.paymentMethod,
       scheduleAt: task.scheduleAt?.toISOString() ?? null,
+      searchRadiusM: task.searchRadiusM,
       status: task.status,
       needsReview: task.needsReview,
       createdAt: task.createdAt.toISOString(),

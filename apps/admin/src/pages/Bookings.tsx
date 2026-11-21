@@ -1,4 +1,11 @@
-import { type AdminTask, DEFAULT_COMMISSION_BPS, type TaskStatus, commissionFor, formatRupees } from '@sibimate/shared';
+import {
+  type AdminTask,
+  DEFAULT_COMMISSION_BPS,
+  SEARCH_AREA_STEPS_M,
+  type TaskStatus,
+  commissionFor,
+  formatRupees,
+} from '@sibimate/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api } from '../api';
@@ -148,7 +155,8 @@ function TaskPanel({ task }: { task: AdminTask }) {
         queryClient.invalidateQueries({ queryKey: ['helpers'] }),
       ]),
   });
-  const canAssign = task.status === 'matching';
+  // An admin can give a helper a task still looking, or one whose search ended with nobody.
+  const canAssign = task.status === 'matching' || task.status === 'expired';
 
   return (
     <section className="card stack" style={{ gap: 16 }} aria-live="polite" aria-label="Selected task">
@@ -232,6 +240,64 @@ function TaskPanel({ task }: { task: AdminTask }) {
         </form>
       ) : null}
       {assign.isSuccess ? <p className="notice good">Helper assigned. They can see the job in the app now.</p> : null}
+      {canAssign && !assign.isSuccess ? <WidenSearch task={task} /> : null}
     </section>
+  );
+}
+
+const km = (metres: number) => `${metres / 1000} km`;
+
+/** Searches further for a task no helper has taken. An expired task starts looking again. */
+function WidenSearch({ task }: { task: AdminTask }) {
+  const queryClient = useQueryClient();
+  const larger = SEARCH_AREA_STEPS_M.filter((step) => step > task.searchRadiusM);
+  const [chosen, setChosen] = useState<number | null>(null);
+  // After a widening the list refreshes, and a choice no longer larger falls back to the next step.
+  const radiusM = chosen !== null && larger.some((step) => step === chosen) ? chosen : (larger[0] ?? '');
+  const widen = useMutation({
+    mutationFn: () => api.widen(task.id, Number(radiusM)),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+  });
+
+  return (
+    <form
+      className="stack"
+      style={{ gap: 12, borderTop: '1px solid var(--border)', paddingTop: 16 }}
+      onSubmit={(event) => {
+        event.preventDefault();
+        widen.mutate();
+      }}
+    >
+      <p className="small muted">
+        {task.status === 'expired'
+          ? `The search reached ${km(task.searchRadiusM)} and found nobody. Searching again tells helpers further away, and those shown it before.`
+          : `Searching within ${km(task.searchRadiusM)} of the customer.`}
+      </p>
+      {larger.length === 0 ? (
+        <p className="small muted">This is the widest search there is.</p>
+      ) : (
+        <>
+          <label className="field">
+            <span>{task.status === 'expired' ? 'Search again within' : 'Widen the search to'}</span>
+            <select value={radiusM} onChange={(event) => setChosen(Number(event.target.value))} required>
+              {larger.map((step) => (
+                <option key={step} value={step}>
+                  {km(step)}
+                </option>
+              ))}
+            </select>
+          </label>
+          {widen.isError ? (
+            <p className="notice alert" role="alert">
+              {widen.error.message}
+            </p>
+          ) : null}
+          {widen.isSuccess ? <p className="notice good">Search widened. Helpers in the new area can see the task now.</p> : null}
+          <button className="btn secondary" type="submit" disabled={radiusM === '' || widen.isPending}>
+            {widen.isPending ? 'Widening…' : task.status === 'expired' ? 'Search again' : 'Widen search'}
+          </button>
+        </>
+      )}
+    </form>
   );
 }

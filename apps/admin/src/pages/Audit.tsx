@@ -3,6 +3,9 @@ import { api } from '../api';
 
 const ACTIONS: Record<string, string> = {
   'task.assign': 'Assigned a helper',
+  'task.widen': 'Widened a search',
+  'user.block': 'Blocked an account',
+  'user.unblock': 'Unblocked an account',
   'helper.create': 'Added a helper',
   'helper.approve': 'Approved a helper',
   'helper.reject': 'Turned down an application',

@@ -62,6 +62,8 @@ export const users = pgTable('users', {
     .notNull()
     .default(sql`ARRAY['customer']::user_role[]`),
   status: userStatusEnum('status').notNull().default('active'),
+  /** Why an admin blocked the account. Cleared when it is unblocked. */
+  blockedReason: text('blocked_reason'),
   /** The privacy notice version the person last agreed to, and when. */
   consentVersion: text('consent_version'),
   consentedAt: at('consented_at'),

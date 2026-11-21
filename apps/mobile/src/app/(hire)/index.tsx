@@ -1,15 +1,15 @@
-import { TASK_TEXT_MAX, type Task, formatRupees } from '@sibimate/shared';
+import { TASK_TEXT_MAX } from '@sibimate/shared';
 import { colors, radius, space, textStyles } from '@sibimate/ui-tokens';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Platform, Pressable, TextInput, View } from 'react-native';
+import { Platform, TextInput, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { ModeToggle } from '@/components/ModeToggle';
 import { Notice } from '@/components/Notice';
 import { Screen } from '@/components/Screen';
-import { StatusPill } from '@/components/StatusPill';
+import { TaskRow } from '@/components/TaskRow';
 import { Text, fontFace } from '@/components/Text';
 import { VoiceInput } from '@/components/VoiceInput';
 import { useDraft } from '@/lib/draft';
@@ -66,6 +66,7 @@ export default function Home() {
           {!isHelper ? (
             <Button label={t('apply.link')} variant="secondary" size="md" onPress={() => router.push('/earn/apply')} />
           ) : null}
+          <Button label={t('tasks.title')} variant="ghost" size="sm" onPress={() => router.push('/tasks')} />
           <Button label={t('account.title')} variant="ghost" size="sm" onPress={() => router.push('/account')} />
         </>
       }
@@ -166,32 +167,5 @@ export default function Home() {
         </View>
       ) : null}
     </Screen>
-  );
-}
-
-function TaskRow({ task, onPress }: { task: Task; onPress: () => void }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => ({
-        gap: space[8],
-        padding: space[16],
-        borderRadius: radius[16],
-        borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: pressed ? colors.surfaceSunken : colors.surface,
-      })}
-    >
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: space[12] }}>
-        <Text variant="labelLg" color={colors.ink} style={{ flex: 1 }} numberOfLines={2}>
-          {task.title}
-        </Text>
-        <Text variant="figure" color={colors.ink} style={{ fontSize: 20 }}>
-          {formatRupees(task.customerPrice)}
-        </Text>
-      </View>
-      <StatusPill status={task.status} />
-    </Pressable>
   );
 }

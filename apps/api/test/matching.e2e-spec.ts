@@ -62,6 +62,17 @@ describe('Matching and offers (e2e)', () => {
     return verified.body.accessToken as string;
   }
 
+  /** Signs in another admin with `role`. */
+  async function adminWithRole(role: 'finance' | 'verifier' | 'operations') {
+    const email = `${role}@sibimate.test`;
+    const { totpSecret } = await app.get(AdminAuthService).upsertAdmin(email, 'a long test password', role);
+    const login = await http()
+      .post('/v1/admin/auth/login')
+      .send({ email, password: 'a long test password', code: totpCode(totpSecret, totpStep(new Date())) })
+      .expect(200);
+    return login.body.token as string;
+  }
+
   /** Adds a helper and puts them online `km` north of the customer. */
   async function helperAt(km: number, name: string, options: object = {}) {
     const phone = `+9190000${String(10000 + ++phones)}`;
@@ -507,6 +518,146 @@ describe('Matching and offers (e2e)', () => {
       await as(stranger).post(`/tasks/${taskId}/search-area`, { radiusM: 5000 }).expect(404);
       await as(customer).post(`/tasks/${taskId}/cancel`).expect(200);
       await as(customer).post(`/tasks/${taskId}/search-area`, { radiusM: 5000 }).expect(409);
+    });
+  });
+
+  describe('admin widening the search', () => {
+    it('reaches further at once for a task still looking', async () => {
+      await helperAt(1, 'Near');
+      const far = await helperAt(9, 'Far');
+      await as(far.token).put('/helper/availability', { isOnline: true, radiusM: 15000 }).expect(200);
+      const taskId = await postTask();
+      expect(await matching.runRing(taskId, 0)).toEqual({ notified: 1 });
+
+      await as(admin).post(`/admin/tasks/${taskId}/widen`, { radiusM: 10000 }).expect(204);
+      expect(await nearby(far.token)).toHaveLength(1);
+      const listed = (await as(admin).get('/admin/tasks').expect(200)).body.items[0];
+      expect(listed).toMatchObject({ id: taskId, searchRadiusM: 10000 });
+      // The automatic rings that follow never shrink it again.
+      await matching.runRing(taskId, 1);
+      expect((await task(taskId)).searchRadiusM).toBe(10000);
+      const audit = (await as(admin).get('/admin/audit').expect(200)).body.items[0];
+      expect(audit).toMatchObject({ action: 'task.widen', entityId: taskId, meta: { radiusM: 10000 } });
+    });
+
+    it('starts an expired task looking again, showing it to helpers who saw it before', async () => {
+      const near = await helperAt(1, 'Near');
+      const taskId = await postTask();
+      await matching.runRing(taskId, 0);
+      for (let ring = 1; ring <= MATCHING_RINGS.length; ring++) {
+        await matching.runRing(taskId, ring);
+      }
+      expect((await task(taskId)).status).toBe('expired');
+      expect(await nearby(near.token)).toHaveLength(0);
+
+      scheduler.jobs = [];
+      await as(admin).post(`/admin/tasks/${taskId}/widen`, { radiusM: 15000 }).expect(204);
+      expect((await task(taskId)).status).toBe('matching');
+      expect(scheduler.jobs).toEqual([{ taskId, ring: 0, delayMs: 0 }]);
+      expect(await matching.runRing(taskId, 0)).toEqual({ notified: 1 });
+      expect((await task(taskId)).searchRadiusM).toBe(15000);
+      expect(await nearby(near.token)).toHaveLength(1);
+    });
+
+    it('only widens, only tasks without a helper, and only for owners and operations', async () => {
+      const taskId = await postTask();
+      await matching.runRing(taskId, 0);
+      const smaller = await as(admin).post(`/admin/tasks/${taskId}/widen`, { radiusM: 2000 }).expect(400);
+      expect(smaller.body.details).toEqual([{ path: 'radiusM', message: expect.any(String) }]);
+      await as(admin).post(`/admin/tasks/${taskId}/widen`, { radiusM: 4321 }).expect(400);
+      await as(admin).post(`/admin/tasks/${randomUUID()}/widen`, { radiusM: 5000 }).expect(404);
+      await as(customer).post(`/admin/tasks/${taskId}/widen`, { radiusM: 5000 }).expect(401);
+
+      await as(await adminWithRole('finance')).post(`/admin/tasks/${taskId}/widen`, { radiusM: 5000 }).expect(403);
+
+      await as(customer).post(`/tasks/${taskId}/cancel`).expect(200);
+      await as(admin).post(`/admin/tasks/${taskId}/widen`, { radiusM: 5000 }).expect(409);
+    });
+  });
+
+  describe('customers page', () => {
+    const customers = async (q = '') =>
+      (await as(admin).get(`/admin/customers${q ? `?q=${encodeURIComponent(q)}` : ''}`).expect(200)).body.items;
+
+    it('lists everyone signed up, newest first, with their tasks counted, and finds them by name or number', async () => {
+      const first = await postTask();
+      await postTask();
+      await as(customer).post(`/tasks/${first}/cancel`).expect(200);
+      const helper = await helperAt(1, 'Aman');
+      expect(helper.id).toBeDefined();
+
+      const all = await customers();
+      expect(all).toHaveLength(2);
+      expect(all[0]).toMatchObject({ name: 'Aman', isHelper: true, tasks: { total: 0 }, lastTaskAt: null });
+      expect(all[1]).toMatchObject({
+        phone: '+919876543210',
+        status: 'active',
+        isHelper: false,
+        blockedReason: null,
+        tasks: { total: 2, open: 1, done: 0, cancelled: 1 },
+      });
+      expect(await customers('aMa')).toHaveLength(1);
+      expect(await customers('76543')).toHaveLength(1);
+      expect(await customers('%')).toHaveLength(0);
+      await as(customer).get('/admin/customers').expect(401);
+    });
+
+    it('blocks an account: cancels its untaken tasks, signs it out and keeps it out until unblocked', async () => {
+      const taskId = await postTask();
+      const other = await adminWithRole('finance');
+      const [person] = (await customers('76543')) as { id: string }[];
+      await as(other).post(`/admin/customers/${person!.id}/block`, { reason: 'Abusive to helpers' }).expect(403);
+      await as(admin).post(`/admin/customers/${person!.id}/block`, { reason: 'no' }).expect(400);
+
+      const blocked = await as(admin)
+        .post(`/admin/customers/${person!.id}/block`, { reason: 'Abusive to helpers' })
+        .expect(200);
+      expect(blocked.body).toEqual({ cancelledTasks: 1 });
+      expect((await customers('76543'))[0]).toMatchObject({ status: 'blocked', blockedReason: 'Abusive to helpers' });
+      const { rows } = await db.execute(sql`select status from tasks where id = ${taskId}`);
+      expect(rows).toEqual([{ status: 'cancelled' }]);
+      await as(customer).get('/tasks').expect(401);
+      await as(admin).post(`/admin/customers/${person!.id}/block`, { reason: 'Abusive to helpers' }).expect(409);
+
+      // Earlier codes count towards the number's resend wait and limit, which are not what this test is about.
+      await db.execute(sql`delete from otp_challenges`);
+      await http().post('/v1/auth/otp/request').send({ phone: '+919876543210', deviceId: 'device-x1' }).expect(200);
+      await http()
+        .post('/v1/auth/otp/verify')
+        .send({ acceptedNotice: true, phone: '+919876543210', code: sms.lastCode, deviceId: 'device-x1' })
+        .expect(403);
+
+      await as(admin).post(`/admin/customers/${person!.id}/unblock`).expect(204);
+      expect((await customers('76543'))[0]).toMatchObject({ status: 'active', blockedReason: null });
+      await db.execute(sql`delete from otp_challenges`);
+      customer = await signIn('+919876543210');
+      await as(customer).get('/tasks').expect(200);
+      const audit = (await as(admin).get('/admin/audit').expect(200)).body.items;
+      expect(audit.slice(0, 2).map((entry: { action: string }) => entry.action)).toEqual(['user.unblock', 'user.block']);
+    });
+
+    it('waits until a job under way is settled, for the customer and for the helper', async () => {
+      const helper = await helperAt(1, 'Aman');
+      const taskId = await postTask();
+      await matching.runRing(taskId, 0);
+      await as(helper.token).post(`/helper/tasks/${taskId}/accept`).expect(200);
+
+      const people = (await customers()) as { id: string; name: string | null }[];
+      for (const person of people) {
+        const refused = await as(admin)
+          .post(`/admin/customers/${person.id}/block`, { reason: 'Testing the rule' })
+          .expect(409);
+        expect(refused.body.code).toBe('conflict');
+      }
+      await as(admin).post(`/admin/customers/${randomUUID()}/block`, { reason: 'Testing the rule' }).expect(404);
+    });
+
+    it('stops showing tasks to a blocked helper', async () => {
+      const helper = await helperAt(1, 'Aman');
+      await as(admin).post(`/admin/customers/${(await customers('Aman'))[0].id}/block`, { reason: 'Fake documents' }).expect(200);
+      const taskId = await postTask();
+      expect(await matching.runRing(taskId, 0)).toEqual({ notified: 0 });
+      await as(helper.token).get('/helper/tasks/nearby').expect(401);
     });
   });
 

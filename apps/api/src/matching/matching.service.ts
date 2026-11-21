@@ -16,6 +16,8 @@ const QUOTES_GRACE_MS = 60 * 60 * 1000;
 export const START_RING = -1;
 /** The ring number recorded on offers found when the customer changed the search area. */
 const CUSTOMER_RING = -2;
+/** The ring number recorded on offers found when an admin widened the search. */
+const ADMIN_RING = -3;
 
 /** A ring's radius, after the customer's own choice: a reduced area caps it, a larger one sets its least. */
 function effectiveRadius(ringRadiusM: number, task: { customerRadiusM: number | null; customerRadiusCap: boolean }) {
@@ -87,6 +89,48 @@ export class MatchingService {
       .where(eq(tasks.id, taskId));
     const notified = await this.notify(taskId, CUSTOMER_RING, radiusM);
     this.logger.log(`Task ${taskId}: customer set the search to ${radiusM} m, notified ${notified} helper(s)`);
+    await this.notifier.taskChanged(taskId);
+  }
+
+  /**
+   * An admin widens the search for a task no helper has taken. A task still
+   * looking notifies the helpers newly inside the area at once. An expired task
+   * starts looking again, rings and all, never smaller than this area, and the
+   * helpers shown it before can be shown it again.
+   */
+  async widenForAdmin(taskId: string, radiusM: number, adminId: string): Promise<void> {
+    const [task] = await this.db.select().from(tasks).where(eq(tasks.id, taskId));
+    if (!task) {
+      throw new ApiException(404, 'not_found', 'Task not found.');
+    }
+    if (task.status !== 'matching' && task.status !== 'expired') {
+      throw new ApiException(409, 'invalid_transition', 'Only a task that has no helper yet can be searched for.');
+    }
+    if (radiusM <= task.searchRadiusM) {
+      throw new ApiException(400, 'validation_failed', 'Choose a distance larger than the current search.', [
+        { path: 'radiusM', message: `Choose more than ${task.searchRadiusM / 1000} km` },
+      ]);
+    }
+    const area = { customerRadiusM: radiusM, customerRadiusCap: false, searchRadiusM: radiusM };
+
+    if (task.status === 'expired') {
+      await this.taskState.transition(
+        taskId,
+        'matching',
+        { role: 'admin', id: adminId },
+        {
+          within: async (tx) => {
+            await tx.update(tasks).set(area).where(eq(tasks.id, taskId));
+            await tx.delete(taskOffers).where(eq(taskOffers.taskId, taskId));
+          },
+        },
+      );
+      this.logger.log(`Task ${taskId}: an admin searched again within ${radiusM} m`);
+      return;
+    }
+    await this.db.update(tasks).set(area).where(eq(tasks.id, taskId));
+    const notified = await this.notify(taskId, ADMIN_RING, radiusM);
+    this.logger.log(`Task ${taskId}: an admin widened the search to ${radiusM} m, notified ${notified} helper(s)`);
     await this.notifier.taskChanged(taskId);
   }
 

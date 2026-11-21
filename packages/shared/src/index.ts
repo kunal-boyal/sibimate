@@ -7,3 +7,4 @@ export * from './bookings.js';
 export * from './matching.js';
 export * from './onboarding.js';
 export * from './disputes.js';
+export * from './customers.js';

@@ -8,6 +8,8 @@ import {
   type AdminCategory,
   type AuditEntry,
   auditListSchema,
+  type AdminCustomerList,
+  adminCustomerListSchema,
   type AdminDispute,
   type ApproveCategory,
   adminCategoryListSchema,
@@ -98,6 +100,8 @@ export const api = {
     request(`/admin/tasks?status=${status}`, { schema: adminTaskListSchema }),
   assign: (taskId: string, helperId: string) =>
     request(`/admin/tasks/${taskId}/assign`, { method: 'POST', body: { helperId } }),
+  widen: (taskId: string, radiusM: number) =>
+    request(`/admin/tasks/${taskId}/widen`, { method: 'POST', body: { radiusM } }),
   helpers: (): Promise<HelperList> => request('/admin/helpers', { schema: helperListSchema }),
   categories: (): Promise<{ items: AdminCategory[] }> =>
     request('/admin/categories', { schema: adminCategoryListSchema }),
@@ -106,6 +110,15 @@ export const api = {
   mergeCategory: (id: string, intoId: string) =>
     request(`/admin/categories/${id}/merge`, { method: 'POST', body: { intoId } }),
   audit: (): Promise<{ items: AuditEntry[] }> => request('/admin/audit', { schema: auditListSchema }),
+  customers: (q: string): Promise<AdminCustomerList> =>
+    request(`/admin/customers${q ? `?q=${encodeURIComponent(q)}` : ''}`, { schema: adminCustomerListSchema }),
+  blockCustomer: (id: string, reason: string): Promise<{ cancelledTasks: number }> =>
+    request(`/admin/customers/${id}/block`, {
+      method: 'POST',
+      body: { reason },
+      schema: z.object({ cancelledTasks: z.number().int() }),
+    }),
+  unblockCustomer: (id: string) => request(`/admin/customers/${id}/unblock`, { method: 'POST' }),
   overview: (): Promise<AdminOverview> => request('/admin/overview', { schema: adminOverviewSchema }),
   disputes: (status: 'open' | 'resolved'): Promise<{ items: AdminDispute[] }> =>
     request(`/admin/disputes?status=${status}`, { schema: adminDisputeListSchema }),

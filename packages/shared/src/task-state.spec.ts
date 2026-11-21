@@ -34,6 +34,15 @@ describe('task state machine', () => {
     }
   });
 
+  it('lets an admin cancel only a task no helper has', () => {
+    for (const from of ['posted', 'matching', 'expired'] as const) {
+      expect(canTransitionTask(from, 'cancelled', 'admin'), from).toBe(true);
+    }
+    for (const from of ['draft', 'assigned', 'en_route', 'in_progress'] as const) {
+      expect(canTransitionTask(from, 'cancelled', 'admin'), from).toBe(false);
+    }
+  });
+
   it('checks who is making the move', () => {
     expect(canTransitionTask('assigned', 'en_route', 'customer')).toBe(false);
     expect(canTransitionTask('matching', 'expired', 'helper')).toBe(false);

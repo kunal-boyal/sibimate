@@ -8,6 +8,7 @@ import { Helpers } from './pages/Helpers';
 import { Audit } from './pages/Audit';
 import { Categories } from './pages/Categories';
 import { Disputes } from './pages/Disputes';
+import { Customers } from './pages/Customers';
 import { Login } from './pages/Login';
 import { Overview } from './pages/Overview';
 import { Settings } from './pages/Settings';
@@ -82,6 +83,7 @@ export function App() {
           </NavLink>
           <NavLink to="/bookings">Bookings</NavLink>
           <NavLink to="/disputes">Disputes</NavLink>
+          <NavLink to="/customers">Customers</NavLink>
           <NavLink to="/helpers">Helpers</NavLink>
           <NavLink to="/categories">Categories</NavLink>
           <NavLink to="/settings">Settings</NavLink>
@@ -103,6 +105,7 @@ export function App() {
           <Route path="/" element={<Overview />} />
           <Route path="/bookings" element={<Bookings />} />
           <Route path="/disputes" element={<Disputes />} />
+          <Route path="/customers" element={<Customers />} />
           <Route path="/helpers" element={<Helpers />} />
           <Route path="/categories" element={<Categories />} />
           <Route path="/settings" element={<Settings />} />
